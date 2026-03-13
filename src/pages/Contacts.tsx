@@ -10,49 +10,67 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
-interface Lead {
+type Lead = {
   id: string;
   name: string;
   email: string;
-  phone: string;
-  company: string;
+  phone: string | null;
+  company: string | null;
   status: string;
-  addedAt: string;
-}
-
-const initialLeads: Lead[] = [
-  { id: "1", name: "Sarah Chen", email: "sarah@acme.co", phone: "+1 555-0101", company: "Acme Corp", status: "Qualified", addedAt: "2026-03-10" },
-  { id: "2", name: "James Wilson", email: "james@globex.io", phone: "+1 555-0102", company: "Globex Inc", status: "Lead", addedAt: "2026-03-11" },
-  { id: "3", name: "Maria Rodriguez", email: "maria@wayne.com", phone: "+1 555-0103", company: "Wayne Enterprises", status: "Proposal", addedAt: "2026-03-12" },
-  { id: "4", name: "David Park", email: "david@stark.tech", phone: "+1 555-0104", company: "Stark Industries", status: "Negotiation", addedAt: "2026-03-12" },
-  { id: "5", name: "Emily Thompson", email: "emily@oscorp.net", phone: "+1 555-0105", company: "Oscorp", status: "Closed", addedAt: "2026-03-13" },
-];
+  added_at: string;
+};
 
 const Contacts = () => {
-  const [leads, setLeads] = useState<Lead[]>(initialLeads);
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", phone: "", company: "" });
+  const queryClient = useQueryClient();
+
+  const { data: leads = [], isLoading } = useQuery({
+    queryKey: ["contacts"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("contacts")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as Lead[];
+    },
+  });
+
+  const addMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("contacts").insert({
+        name: form.name,
+        email: form.email,
+        phone: form.phone || null,
+        company: form.company || null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["contacts"] });
+      setForm({ name: "", email: "", phone: "", company: "" });
+      setOpen(false);
+      toast.success("Lead added");
+    },
+    onError: () => toast.error("Failed to add lead"),
+  });
 
   const filtered = leads.filter(
     (l) =>
       l.name.toLowerCase().includes(search.toLowerCase()) ||
       l.email.toLowerCase().includes(search.toLowerCase()) ||
-      l.company.toLowerCase().includes(search.toLowerCase())
+      (l.company || "").toLowerCase().includes(search.toLowerCase())
   );
 
   const addLead = () => {
     if (!form.name || !form.email) return;
-    const newLead: Lead = {
-      id: Date.now().toString(),
-      ...form,
-      status: "Lead",
-      addedAt: new Date().toISOString().split("T")[0],
-    };
-    setLeads([newLead, ...leads]);
-    setForm({ name: "", email: "", phone: "", company: "" });
-    setOpen(false);
+    addMutation.mutate();
   };
 
   return (
@@ -100,7 +118,9 @@ const Contacts = () => {
                 <Label>Company</Label>
                 <Input value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} placeholder="Company name" className="bg-muted border-border" />
               </div>
-              <Button onClick={addLead} className="w-full">Add Lead</Button>
+              <Button onClick={addLead} className="w-full" disabled={addMutation.isPending}>
+                {addMutation.isPending ? "Adding..." : "Add Lead"}
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -118,23 +138,19 @@ const Contacts = () => {
             </tr>
           </thead>
           <tbody>
-            {filtered.map((lead) => (
+            {isLoading ? (
+              <tr><td colSpan={5} className="px-5 py-12 text-center text-muted-foreground text-sm">Loading...</td></tr>
+            ) : filtered.map((lead) => (
               <tr key={lead.id} className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
                 <td className="px-5 py-4 text-sm font-medium">{lead.name}</td>
                 <td className="px-5 py-4 text-sm text-muted-foreground">
-                  <span className="flex items-center gap-2">
-                    <Mail className="h-3.5 w-3.5" /> {lead.email}
-                  </span>
+                  <span className="flex items-center gap-2"><Mail className="h-3.5 w-3.5" /> {lead.email}</span>
                 </td>
                 <td className="px-5 py-4 text-sm text-muted-foreground hidden md:table-cell">
-                  <span className="flex items-center gap-2">
-                    <Phone className="h-3.5 w-3.5" /> {lead.phone}
-                  </span>
+                  <span className="flex items-center gap-2"><Phone className="h-3.5 w-3.5" /> {lead.phone}</span>
                 </td>
                 <td className="px-5 py-4 text-sm text-muted-foreground hidden lg:table-cell">
-                  <span className="flex items-center gap-2">
-                    <Building2 className="h-3.5 w-3.5" /> {lead.company}
-                  </span>
+                  <span className="flex items-center gap-2"><Building2 className="h-3.5 w-3.5" /> {lead.company}</span>
                 </td>
                 <td className="px-5 py-4">
                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -149,12 +165,8 @@ const Contacts = () => {
                 </td>
               </tr>
             ))}
-            {filtered.length === 0 && (
-              <tr>
-                <td colSpan={5} className="px-5 py-12 text-center text-muted-foreground text-sm">
-                  No contacts found
-                </td>
-              </tr>
+            {!isLoading && filtered.length === 0 && (
+              <tr><td colSpan={5} className="px-5 py-12 text-center text-muted-foreground text-sm">No contacts found</td></tr>
             )}
           </tbody>
         </table>
