@@ -14,7 +14,93 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      contacts: {
+        Row: {
+          added_at: string
+          company: string | null
+          created_at: string
+          email: string
+          id: string
+          name: string
+          phone: string | null
+          status: string
+        }
+        Insert: {
+          added_at?: string
+          company?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          name: string
+          phone?: string | null
+          status?: string
+        }
+        Update: {
+          added_at?: string
+          company?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          phone?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
+      deals: {
+        Row: {
+          company: string
+          created_at: string
+          id: string
+          name: string
+          stage: string
+          value: string
+        }
+        Insert: {
+          company: string
+          created_at?: string
+          id?: string
+          name: string
+          stage?: string
+          value: string
+        }
+        Update: {
+          company?: string
+          created_at?: string
+          id?: string
+          name?: string
+          stage?: string
+          value?: string
+        }
+        Relationships: []
+      }
+      tasks: {
+        Row: {
+          completed: boolean
+          created_at: string
+          due_date: string
+          id: string
+          priority: string
+          title: string
+        }
+        Insert: {
+          completed?: boolean
+          created_at?: string
+          due_date?: string
+          id?: string
+          priority?: string
+          title: string
+        }
+        Update: {
+          completed?: boolean
+          created_at?: string
+          due_date?: string
+          id?: string
+          priority?: string
+          title?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
