@@ -1,38 +1,36 @@
 import { useState } from "react";
 import { DollarSign, User, GripVertical } from "lucide-react";
-
-interface Deal {
-  id: string;
-  name: string;
-  company: string;
-  value: string;
-  stage: string;
-}
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 const stages = ["Lead", "Qualified", "Proposal", "Negotiation", "Closed"];
 
-const initialDeals: Deal[] = [
-  { id: "1", name: "Sarah Chen", company: "Acme Corp", value: "$12,000", stage: "Lead" },
-  { id: "2", name: "James Wilson", company: "Globex Inc", value: "$28,500", stage: "Lead" },
-  { id: "3", name: "Maria Rodriguez", company: "Wayne Enterprises", value: "$45,000", stage: "Qualified" },
-  { id: "4", name: "David Park", company: "Stark Industries", value: "$67,000", stage: "Proposal" },
-  { id: "5", name: "Emily Thompson", company: "Oscorp", value: "$34,200", stage: "Proposal" },
-  { id: "6", name: "Alex Morgan", company: "Umbrella Corp", value: "$89,000", stage: "Negotiation" },
-  { id: "7", name: "Lisa Wang", company: "Cyberdyne", value: "$52,300", stage: "Closed" },
-  { id: "8", name: "Tom Baker", company: "Initech", value: "$18,700", stage: "Qualified" },
-];
-
 const Pipeline = () => {
-  const [deals, setDeals] = useState<Deal[]>(initialDeals);
   const [draggedDeal, setDraggedDeal] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  const handleDragStart = (dealId: string) => {
-    setDraggedDeal(dealId);
-  };
+  const { data: deals = [] } = useQuery({
+    queryKey: ["deals"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("deals").select("*").order("created_at");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const updateStage = useMutation({
+    mutationFn: async ({ id, stage }: { id: string; stage: string }) => {
+      const { error } = await supabase.from("deals").update({ stage }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["deals"] }),
+    onError: () => toast.error("Failed to update deal"),
+  });
 
   const handleDrop = (stage: string) => {
     if (!draggedDeal) return;
-    setDeals(deals.map((d) => (d.id === draggedDeal ? { ...d, stage } : d)));
+    updateStage.mutate({ id: draggedDeal, stage });
     setDraggedDeal(null);
   };
 
@@ -67,7 +65,7 @@ const Pipeline = () => {
                   <div
                     key={deal.id}
                     draggable
-                    onDragStart={() => handleDragStart(deal.id)}
+                    onDragStart={() => setDraggedDeal(deal.id)}
                     className={`bg-surface-elevated rounded-lg p-4 border border-border cursor-grab active:cursor-grabbing transition-all hover:border-primary/30 ${
                       draggedDeal === deal.id ? "opacity-50" : ""
                     }`}

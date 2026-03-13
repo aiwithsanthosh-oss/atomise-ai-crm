@@ -2,50 +2,53 @@ import { useState } from "react";
 import { CheckCircle2, Circle, Clock, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
-interface Task {
-  id: string;
-  title: string;
-  completed: boolean;
-  priority: "low" | "medium" | "high";
-  dueDate: string;
-}
-
-const initialTasks: Task[] = [
-  { id: "1", title: "Follow up with Sarah Chen re: Acme proposal", completed: false, priority: "high", dueDate: "2026-03-14" },
-  { id: "2", title: "Prepare demo for Globex meeting", completed: false, priority: "medium", dueDate: "2026-03-15" },
-  { id: "3", title: "Send contract to Wayne Enterprises", completed: true, priority: "high", dueDate: "2026-03-12" },
-  { id: "4", title: "Update CRM pipeline stages", completed: false, priority: "low", dueDate: "2026-03-16" },
-  { id: "5", title: "Call David Park about pricing", completed: false, priority: "medium", dueDate: "2026-03-14" },
-];
-
-const priorityColors = {
+const priorityColors: Record<string, string> = {
   high: "text-red-400",
   medium: "text-amber-400",
   low: "text-muted-foreground",
 };
 
 const Tasks = () => {
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [newTask, setNewTask] = useState("");
+  const queryClient = useQueryClient();
 
-  const toggleTask = (id: string) => {
-    setTasks(tasks.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t)));
-  };
+  const { data: tasks = [] } = useQuery({
+    queryKey: ["tasks"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("tasks").select("*").order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const toggleMutation = useMutation({
+    mutationFn: async ({ id, completed }: { id: string; completed: boolean }) => {
+      const { error } = await supabase.from("tasks").update({ completed }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["tasks"] }),
+  });
+
+  const addMutation = useMutation({
+    mutationFn: async (title: string) => {
+      const { error } = await supabase.from("tasks").insert({ title, priority: "medium" });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      setNewTask("");
+      toast.success("Task added");
+    },
+    onError: () => toast.error("Failed to add task"),
+  });
 
   const addTask = () => {
     if (!newTask.trim()) return;
-    setTasks([
-      {
-        id: Date.now().toString(),
-        title: newTask,
-        completed: false,
-        priority: "medium",
-        dueDate: new Date().toISOString().split("T")[0],
-      },
-      ...tasks,
-    ]);
-    setNewTask("");
+    addMutation.mutate(newTask);
   };
 
   const pending = tasks.filter((t) => !t.completed);
@@ -66,7 +69,7 @@ const Tasks = () => {
           onKeyDown={(e) => e.key === "Enter" && addTask()}
           className="bg-card border-border"
         />
-        <Button onClick={addTask} size="icon" className="shrink-0">
+        <Button onClick={addTask} size="icon" className="shrink-0" disabled={addMutation.isPending}>
           <Plus className="h-4 w-4" />
         </Button>
       </div>
@@ -80,17 +83,17 @@ const Tasks = () => {
             {pending.map((task) => (
               <div
                 key={task.id}
-                onClick={() => toggleTask(task.id)}
+                onClick={() => toggleMutation.mutate({ id: task.id, completed: true })}
                 className="flex items-center gap-3 bg-card rounded-lg border border-border px-5 py-4 hover:bg-muted/50 cursor-pointer transition-colors"
               >
                 <Circle className="h-5 w-5 text-muted-foreground shrink-0" />
                 <span className="flex-1 text-sm">{task.title}</span>
-                <span className={`text-xs font-medium ${priorityColors[task.priority]}`}>
+                <span className={`text-xs font-medium ${priorityColors[task.priority] || "text-muted-foreground"}`}>
                   {task.priority}
                 </span>
                 <span className="text-xs text-muted-foreground flex items-center gap-1">
                   <Clock className="h-3 w-3" />
-                  {task.dueDate}
+                  {task.due_date}
                 </span>
               </div>
             ))}
@@ -106,7 +109,7 @@ const Tasks = () => {
               {completed.map((task) => (
                 <div
                   key={task.id}
-                  onClick={() => toggleTask(task.id)}
+                  onClick={() => toggleMutation.mutate({ id: task.id, completed: false })}
                   className="flex items-center gap-3 bg-card rounded-lg border border-border px-5 py-4 hover:bg-muted/50 cursor-pointer transition-colors opacity-60"
                 >
                   <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
