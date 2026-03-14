@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { DollarSign, User, GripVertical } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
