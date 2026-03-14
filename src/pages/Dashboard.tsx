@@ -1,13 +1,39 @@
 import { Users, DollarSign, TrendingUp, CheckCircle } from "lucide-react";
-
-const stats = [
-  { label: "Total Leads", value: "2,847", icon: Users, change: "+12.5%" },
-  { label: "Revenue", value: "$184,290", icon: DollarSign, change: "+8.2%" },
-  { label: "Conversion", value: "24.3%", icon: TrendingUp, change: "+3.1%" },
-  { label: "Tasks Done", value: "156", icon: CheckCircle, change: "+18.7%" },
-];
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 const Dashboard = () => {
+  const { data: contactsCount } = useQuery({
+    queryKey: ["contacts-count"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("contacts")
+        .select("*", { count: "exact", head: true });
+      if (error) throw error;
+      return count || 0;
+    },
+  });
+
+  const { data: totalRevenue } = useQuery({
+    queryKey: ["revenue"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("deals").select("value");
+      if (error) throw error;
+      const sum = (data || []).reduce((acc, deal) => {
+        const value = parseFloat(deal.value.replace(/[^0-9.-]+/g, "")) || 0;
+        return acc + value;
+      }, 0);
+      return sum;
+    },
+  });
+
+  const stats = [
+    { label: "Total Leads", value: contactsCount?.toLocaleString() || "0", icon: Users, change: "+12.5%" },
+    { label: "Revenue", value: `$${(totalRevenue || 0).toLocaleString()}`, icon: DollarSign, change: "+8.2%" },
+    { label: "Conversion", value: "24.3%", icon: TrendingUp, change: "+3.1%" },
+    { label: "Tasks Done", value: "156", icon: CheckCircle, change: "+18.7%" },
+  ];
+
   return (
     <div className="p-6 space-y-6">
       <div>
