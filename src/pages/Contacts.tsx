@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Search, Plus, Mail, Phone, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -153,15 +154,22 @@ const Contacts = () => {
                   <span className="flex items-center gap-2"><Building2 className="h-3.5 w-3.5" /> {lead.company}</span>
                 </td>
                 <td className="px-5 py-4">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    lead.status === "Closed" ? "bg-emerald-500/10 text-emerald-400" :
-                    lead.status === "Qualified" ? "bg-primary/10 text-primary" :
-                    lead.status === "Proposal" ? "bg-amber-500/10 text-amber-400" :
-                    lead.status === "Negotiation" ? "bg-blue-500/10 text-blue-400" :
-                    "bg-muted text-muted-foreground"
-                  }`}>
+                  <Badge
+                    variant="outline"
+                    className={`${
+                      lead.status === "New" || lead.status === "Lead"
+                        ? "border-blue-500/30 bg-blue-500/10 text-blue-400"
+                        : lead.status === "Negotiation" || lead.status === "Proposal"
+                        ? "border-amber-500/30 bg-amber-500/10 text-amber-400"
+                        : lead.status === "Closed Won"
+                        ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                        : lead.status === "Closed Lost"
+                        ? "border-red-500/30 bg-red-500/10 text-red-400"
+                        : "border-border bg-muted text-muted-foreground"
+                    }`}
+                  >
                     {lead.status}
-                  </span>
+                  </Badge>
                 </td>
               </tr>
             ))}
