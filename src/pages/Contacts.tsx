@@ -159,9 +159,11 @@ const Contacts = () => {
                     className={`${
                       lead.status === "New" || lead.status === "Lead"
                         ? "border-blue-500/30 bg-blue-500/10 text-blue-400"
-                        : lead.status === "Negotiation" || lead.status === "Proposal"
+                        : lead.status === "Negotiation"
+                        ? "border-yellow-500/30 bg-yellow-500/10 text-yellow-400"
+                        : lead.status === "Proposal"
                         ? "border-amber-500/30 bg-amber-500/10 text-amber-400"
-                        : lead.status === "Closed Won"
+                        : lead.status === "Closed" || lead.status === "Closed Won"
                         ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
                         : lead.status === "Closed Lost"
                         ? "border-red-500/30 bg-red-500/10 text-red-400"
