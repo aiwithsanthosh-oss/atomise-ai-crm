@@ -60,7 +60,9 @@ const Pipeline = () => {
                     className={`${
                       stage === "Lead"
                         ? "border-blue-500/30 bg-blue-500/10 text-blue-400"
-                        : stage === "Proposal" || stage === "Negotiation"
+                        : stage === "Negotiation"
+                        ? "border-yellow-500/30 bg-yellow-500/10 text-yellow-400"
+                        : stage === "Proposal"
                         ? "border-amber-500/30 bg-amber-500/10 text-amber-400"
                         : stage === "Closed"
                         ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
