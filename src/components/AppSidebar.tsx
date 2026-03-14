@@ -25,7 +25,7 @@ export function AppSidebar() {
   const location = useLocation();
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border">
+    <Sidebar collapsible="icon" className="border-r border-border glass-card">
       <div className="flex items-center gap-2 px-4 py-5 border-b border-border">
         <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center shrink-0">
           <span className="font-display font-bold text-primary-foreground text-sm">A</span>
