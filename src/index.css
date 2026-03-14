@@ -54,6 +54,9 @@
     --surface-elevated: 240 5% 14%;
     --kanban-card: 240 5% 14%;
 
+    --glass-bg: 240 7% 10% / 0.6;
+    --glass-border: 0 0% 100% / 0.1;
+
     --font-display: "Plus Jakarta Sans", sans-serif;
     --font-body: "Inter", sans-serif;
   }
@@ -71,5 +74,14 @@
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
+  }
+}
+
+@layer components {
+  .glass-card {
+    background: hsla(var(--glass-bg));
+    border: 1px solid hsla(var(--glass-border));
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
   }
 }

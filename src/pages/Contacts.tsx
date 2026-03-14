@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Plus, Mail, Phone, Building2 } from "lucide-react";
+import { Search, Plus, Mail, Phone, Building2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -25,9 +31,27 @@ type Lead = {
   added_at: string;
 };
 
+type Deal = {
+  id: string;
+  name: string;
+  company: string;
+  value: string;
+  stage: string;
+};
+
+const statusBadgeClass = (status: string) => {
+  if (status === "New" || status === "Lead") return "border-blue-500/30 bg-blue-500/10 text-blue-400";
+  if (status === "Negotiation") return "border-yellow-500/30 bg-yellow-500/10 text-yellow-400";
+  if (status === "Proposal") return "border-amber-500/30 bg-amber-500/10 text-amber-400";
+  if (status === "Closed" || status === "Closed Won") return "border-emerald-500/30 bg-emerald-500/10 text-emerald-400";
+  if (status === "Closed Lost") return "border-red-500/30 bg-red-500/10 text-red-400";
+  return "border-border bg-muted text-muted-foreground";
+};
+
 const Contacts = () => {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [form, setForm] = useState({ name: "", email: "", phone: "", company: "" });
   const queryClient = useQueryClient();
 
@@ -41,6 +65,21 @@ const Contacts = () => {
       if (error) throw error;
       return data as Lead[];
     },
+  });
+
+  const { data: selectedLeadDeals = [] } = useQuery({
+    queryKey: ["contact-deals", selectedLead?.company],
+    queryFn: async () => {
+      if (!selectedLead?.company) return [];
+      const { data, error } = await supabase
+        .from("deals")
+        .select("*")
+        .eq("company", selectedLead.company)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as Deal[];
+    },
+    enabled: !!selectedLead?.company,
   });
 
   const addMutation = useMutation({
@@ -127,10 +166,10 @@ const Contacts = () => {
         </Dialog>
       </div>
 
-      <div className="bg-card rounded-lg border border-border overflow-hidden">
+      <div className="glass-card rounded-lg overflow-hidden">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-border bg-surface-elevated">
+            <tr className="border-b border-border/50 bg-surface-elevated/50">
               <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3.5 uppercase tracking-wider">Name</th>
               <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3.5 uppercase tracking-wider">Email</th>
               <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3.5 uppercase tracking-wider hidden md:table-cell">Phone</th>
@@ -142,8 +181,15 @@ const Contacts = () => {
             {isLoading ? (
               <tr><td colSpan={5} className="px-5 py-12 text-center text-muted-foreground text-sm">Loading...</td></tr>
             ) : filtered.map((lead) => (
-              <tr key={lead.id} className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
-                <td className="px-5 py-4 text-sm font-medium">{lead.name}</td>
+              <tr key={lead.id} className="border-b border-border/50 last:border-0 hover:bg-muted/30 transition-colors">
+                <td className="px-5 py-4 text-sm font-medium">
+                  <button
+                    onClick={() => setSelectedLead(lead)}
+                    className="text-foreground hover:text-primary transition-colors underline-offset-2 hover:underline"
+                  >
+                    {lead.name}
+                  </button>
+                </td>
                 <td className="px-5 py-4 text-sm text-muted-foreground">
                   <span className="flex items-center gap-2"><Mail className="h-3.5 w-3.5" /> {lead.email}</span>
                 </td>
@@ -154,22 +200,7 @@ const Contacts = () => {
                   <span className="flex items-center gap-2"><Building2 className="h-3.5 w-3.5" /> {lead.company}</span>
                 </td>
                 <td className="px-5 py-4">
-                  <Badge
-                    variant="outline"
-                    className={`${
-                      lead.status === "New" || lead.status === "Lead"
-                        ? "border-blue-500/30 bg-blue-500/10 text-blue-400"
-                        : lead.status === "Negotiation"
-                        ? "border-yellow-500/30 bg-yellow-500/10 text-yellow-400"
-                        : lead.status === "Proposal"
-                        ? "border-amber-500/30 bg-amber-500/10 text-amber-400"
-                        : lead.status === "Closed" || lead.status === "Closed Won"
-                        ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-                        : lead.status === "Closed Lost"
-                        ? "border-red-500/30 bg-red-500/10 text-red-400"
-                        : "border-border bg-muted text-muted-foreground"
-                    }`}
-                  >
+                  <Badge variant="outline" className={statusBadgeClass(lead.status)}>
                     {lead.status}
                   </Badge>
                 </td>
@@ -181,6 +212,66 @@ const Contacts = () => {
           </tbody>
         </table>
       </div>
+
+      {/* Contact Detail Sheet */}
+      <Sheet open={!!selectedLead} onOpenChange={(open) => !open && setSelectedLead(null)}>
+        <SheetContent className="glass-card border-l border-border/50 overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="font-display text-lg">{selectedLead?.name}</SheetTitle>
+          </SheetHeader>
+          {selectedLead && (
+            <div className="mt-6 space-y-6">
+              <div className="space-y-4">
+                <h4 className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Details</h4>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 text-sm">
+                    <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span>{selectedLead.email}</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm">
+                    <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span>{selectedLead.phone || "—"}</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm">
+                    <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span>{selectedLead.company || "—"}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">Status:</span>
+                  <Badge variant="outline" className={statusBadgeClass(selectedLead.status)}>
+                    {selectedLead.status}
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Added on {new Date(selectedLead.added_at).toLocaleDateString()}
+                </p>
+              </div>
+
+              <div className="border-t border-border/50 pt-4 space-y-3">
+                <h4 className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Associated Deals</h4>
+                {selectedLeadDeals.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No deals found</p>
+                ) : (
+                  <div className="space-y-2">
+                    {selectedLeadDeals.map((deal) => (
+                      <div key={deal.id} className="glass-card rounded-md p-3 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium">{deal.name}</span>
+                          <span className="text-xs text-primary font-medium">{deal.value}</span>
+                        </div>
+                        <Badge variant="outline" className={`text-[10px] ${statusBadgeClass(deal.stage)}`}>
+                          {deal.stage}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };

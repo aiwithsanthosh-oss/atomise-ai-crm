@@ -2,12 +2,21 @@ import { Users, DollarSign, TrendingUp, CheckCircle, UserPlus, Handshake } from 
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 
 type ActivityItem = {
   id: string;
   name: string;
   type: "contact" | "deal";
   created_at: string;
+};
+
+const STAGE_COLORS: Record<string, string> = {
+  Lead: "hsl(217, 91%, 60%)",
+  Qualified: "hsl(263, 70%, 66%)",
+  Proposal: "hsl(38, 92%, 50%)",
+  Negotiation: "hsl(48, 96%, 53%)",
+  Closed: "hsl(160, 84%, 39%)",
 };
 
 const Dashboard = () => {
@@ -32,6 +41,21 @@ const Dashboard = () => {
         return acc + value;
       }, 0);
       return sum;
+    },
+  });
+
+  const { data: pipelineData = [] } = useQuery({
+    queryKey: ["pipeline-chart"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("deals").select("stage");
+      if (error) throw error;
+      const stages = ["Lead", "Qualified", "Proposal", "Negotiation", "Closed"];
+      const counts: Record<string, number> = {};
+      stages.forEach((s) => (counts[s] = 0));
+      (data || []).forEach((d) => {
+        if (counts[d.stage] !== undefined) counts[d.stage]++;
+      });
+      return stages.map((s) => ({ stage: s, deals: counts[s] }));
     },
   });
 
@@ -72,7 +96,7 @@ const Dashboard = () => {
         {stats.map((stat) => (
           <div
             key={stat.label}
-            className="bg-card rounded-lg border border-border p-5 space-y-3"
+            className="glass-card rounded-lg p-5 space-y-3"
           >
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">{stat.label}</span>
@@ -87,10 +111,34 @@ const Dashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-card rounded-lg border border-border p-5 h-64 flex items-center justify-center">
-          <p className="text-muted-foreground text-sm">Pipeline Overview Chart</p>
+        <div className="glass-card rounded-lg p-5 h-64 flex flex-col">
+          <h3 className="text-sm font-display font-semibold mb-4">Pipeline Overview</h3>
+          <div className="flex-1">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={pipelineData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(240, 6%, 16%)" />
+                <XAxis dataKey="stage" tick={{ fill: "hsl(218, 11%, 65%)", fontSize: 12 }} axisLine={false} tickLine={false} />
+                <YAxis allowDecimals={false} tick={{ fill: "hsl(218, 11%, 65%)", fontSize: 12 }} axisLine={false} tickLine={false} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "hsl(240, 7%, 10%)",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    borderRadius: "8px",
+                    backdropFilter: "blur(8px)",
+                    color: "hsl(210, 20%, 98%)",
+                    fontSize: 12,
+                  }}
+                />
+                <Bar dataKey="deals" radius={[4, 4, 0, 0]}>
+                  {pipelineData.map((entry) => (
+                    <Cell key={entry.stage} fill={STAGE_COLORS[entry.stage] || "hsl(263, 70%, 66%)"} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
-        <div className="bg-card rounded-lg border border-border p-5 h-64 flex flex-col">
+        <div className="glass-card rounded-lg p-5 h-64 flex flex-col">
           <h3 className="text-sm font-display font-semibold mb-4">Recent Activity</h3>
           {recentActivity.length === 0 ? (
             <div className="flex-1 flex items-center justify-center">
