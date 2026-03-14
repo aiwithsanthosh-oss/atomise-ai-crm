@@ -55,9 +55,20 @@ const Pipeline = () => {
               <div className="flex items-center justify-between px-3 py-2.5 mb-3">
                 <div className="flex items-center gap-2">
                   <h3 className="text-sm font-display font-semibold">{stage}</h3>
-                  <span className="bg-muted text-muted-foreground text-xs px-2 py-0.5 rounded-full">
+                  <Badge
+                    variant="outline"
+                    className={`${
+                      stage === "Lead"
+                        ? "border-blue-500/30 bg-blue-500/10 text-blue-400"
+                        : stage === "Proposal" || stage === "Negotiation"
+                        ? "border-amber-500/30 bg-amber-500/10 text-amber-400"
+                        : stage === "Closed"
+                        ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                        : "border-border bg-muted text-muted-foreground"
+                    }`}
+                  >
                     {stageDeals.length}
-                  </span>
+                  </Badge>
                 </div>
               </div>
 
