@@ -98,7 +98,7 @@ const Contacts = () => {
       setOpen(false);
       toast.success("Lead added");
     },
-    onError: () => toast.error("Failed to add lead"),
+    onError: (error: Error) => toast.error(`Failed to add lead: ${error.message}`),
   });
 
   const filtered = leads.filter(
