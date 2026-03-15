@@ -1,6 +1,17 @@
 import { useState } from "react";
-import { DollarSign, User, GripVertical } from "lucide-react";
+import { DollarSign, User, GripVertical, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -9,6 +20,7 @@ const stages = ["Lead", "Qualified", "Proposal", "Negotiation", "Closed"];
 
 const Pipeline = () => {
   const [draggedDeal, setDraggedDeal] = useState<string | null>(null);
+  const [dealToDelete, setDealToDelete] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const { data: deals = [] } = useQuery({
@@ -26,7 +38,24 @@ const Pipeline = () => {
       if (error) throw error;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["deals"] }),
-    onError: () => toast.error("Failed to update deal"),
+    onError: (error: Error) => toast.error(`Failed to update deal: ${error.message}`),
+  });
+
+  const deleteDeal = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("deals").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["deals"] }),
+        queryClient.invalidateQueries({ queryKey: ["pipeline-chart"] }),
+        queryClient.invalidateQueries({ queryKey: ["recent-activity"] }),
+      ]);
+      setDealToDelete(null);
+      toast.success("Deal deleted");
+    },
+    onError: (error: Error) => toast.error(`Failed to delete deal: ${error.message}`),
   });
 
   const handleDrop = (stage: string) => {
@@ -34,6 +63,8 @@ const Pipeline = () => {
     updateStage.mutate({ id: draggedDeal, stage });
     setDraggedDeal(null);
   };
+
+  const selectedDeal = deals.find((deal) => deal.id === dealToDelete);
 
   return (
     <div className="p-6 h-full flex flex-col">
@@ -48,7 +79,7 @@ const Pipeline = () => {
           return (
             <div
               key={stage}
-              className="flex-shrink-0 w-72 flex flex-col"
+              className="flex-shrink-0 w-72 flex flex-col animate-[fade-in_0.2s_ease-out]"
               onDragOver={(e) => e.preventDefault()}
               onDrop={() => handleDrop(stage)}
             >
@@ -80,13 +111,26 @@ const Pipeline = () => {
                     key={deal.id}
                     draggable
                     onDragStart={() => setDraggedDeal(deal.id)}
-                    className={`bg-surface-elevated rounded-lg p-4 border border-border cursor-grab active:cursor-grabbing transition-all hover:border-primary/30 ${
+                    className={`bg-surface-elevated rounded-lg p-4 border border-border cursor-grab active:cursor-grabbing transition-all duration-200 hover:border-primary/30 animate-[fade-in_0.2s_ease-out] ${
                       draggedDeal === deal.id ? "opacity-50" : ""
                     }`}
                   >
                     <div className="flex items-start justify-between mb-2">
                       <span className="text-sm font-medium">{deal.name}</span>
-                      <GripVertical className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-muted-foreground hover:text-destructive transition-colors duration-200"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setDealToDelete(deal.id);
+                          }}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                        <GripVertical className="h-4 w-4 text-muted-foreground shrink-0" />
+                      </div>
                     </div>
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-2">
                       <User className="h-3 w-3" />
@@ -103,6 +147,26 @@ const Pipeline = () => {
           );
         })}
       </div>
+
+      <AlertDialog open={!!dealToDelete} onOpenChange={(dialogOpen) => !dialogOpen && setDealToDelete(null)}>
+        <AlertDialogContent className="animate-[fade-in_0.2s_ease-out]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete deal?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove {selectedDeal?.name || "this deal"} from your pipeline.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => dealToDelete && deleteDeal.mutate(dealToDelete)}
+            >
+              {deleteDeal.isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
