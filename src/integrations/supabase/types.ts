@@ -7,8 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.4"
   }
@@ -50,6 +48,7 @@ export type Database = {
       deals: {
         Row: {
           company: string
+          contact_id: string | null   // ← ADDED
           created_at: string
           id: string
           name: string
@@ -58,6 +57,7 @@ export type Database = {
         }
         Insert: {
           company: string
+          contact_id?: string | null   // ← ADDED
           created_at?: string
           id?: string
           name: string
@@ -66,6 +66,7 @@ export type Database = {
         }
         Update: {
           company?: string
+          contact_id?: string | null   // ← ADDED
           created_at?: string
           id?: string
           name?: string
@@ -74,29 +75,104 @@ export type Database = {
         }
         Relationships: []
       }
+      campaigns: {
+        Row: {
+          id: string
+          name: string
+          trigger_type: string
+          stage: string | null
+          days_after: number | null
+          email_subject: string
+          email_body: string
+          whatsapp_message: string
+          is_active: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          trigger_type: string
+          stage?: string | null
+          days_after?: number | null
+          email_subject: string
+          email_body: string
+          whatsapp_message: string
+          is_active?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          trigger_type?: string
+          stage?: string | null
+          days_after?: number | null
+          email_subject?: string
+          email_body?: string
+          whatsapp_message?: string
+          is_active?: boolean
+          created_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          id: string
+          full_name: string | null
+          email: string | null
+          mobile_number: string | null
+          role: string | null
+          is_active: boolean | null
+          created_at: string
+        }
+        Insert: {
+          id: string
+          full_name?: string | null
+          email?: string | null
+          mobile_number?: string | null
+          role?: string | null
+          is_active?: boolean | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          full_name?: string | null
+          email?: string | null
+          mobile_number?: string | null
+          role?: string | null
+          is_active?: boolean | null
+          created_at?: string
+        }
+        Relationships: []
+      }
       tasks: {
         Row: {
           completed: boolean
+          contact_id: string | null   // ← ADDED
           created_at: string
-          due_date: string
+          due_date: string | null
           id: string
           priority: string
+          status: string | null       // ← ADDED
           title: string
         }
         Insert: {
           completed?: boolean
+          contact_id?: string | null  // ← ADDED
           created_at?: string
-          due_date?: string
+          due_date?: string | null
           id?: string
           priority?: string
+          status?: string | null      // ← ADDED
           title: string
         }
         Update: {
           completed?: boolean
+          contact_id?: string | null  // ← ADDED
           created_at?: string
-          due_date?: string
+          due_date?: string | null
           id?: string
           priority?: string
+          status?: string | null      // ← ADDED
           title?: string
         }
         Relationships: []
