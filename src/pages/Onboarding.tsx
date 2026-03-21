@@ -348,7 +348,7 @@ const Onboarding = () => {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="h-full w-full flex flex-col overflow-hidden page-bg px-6 pt-5 pb-5 gap-4">
+    <div className="h-full w-full flex flex-col overflow-y-auto lg:overflow-hidden page-bg px-4 lg:px-6 pt-4 lg:pt-5 pb-5 gap-3 lg:gap-4">
 
       {/* ── Header ── */}
       <div className="flex items-center justify-between shrink-0">
@@ -362,7 +362,7 @@ const Onboarding = () => {
       </div>
 
       {/* ── Stats ── */}
-      <div className="grid grid-cols-3 gap-3 shrink-0">
+      <div className="grid grid-cols-3 gap-2 lg:gap-3 shrink-0">
         {[
           { label: "Total Clients",  value: trackersRaw.length, color: "text-foreground"  },
           { label: "In Progress",    value: trackersRaw.filter((t) => { try { const p = (t.items || []).length ? Math.round(((t.items || []).filter((i) => i.is_completed).length / (t.items || []).length) * 100) : 0; return p > 0 && p < 100; } catch { return false; } }).length, color: "text-amber-400" },
@@ -376,10 +376,10 @@ const Onboarding = () => {
       </div>
 
       {/* ── Main content — split panel ── */}
-      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-3">
+      <div className="flex-none lg:flex-1 lg:min-h-0 grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-3">
 
         {/* ── LEFT: Client list ── */}
-        <div className="flex flex-col min-h-0 card-bg border border-border rounded-[16px] overflow-hidden">
+        <div className="flex flex-col h-[320px] lg:min-h-0 card-bg border border-border rounded-[16px] overflow-hidden">
 
           {/* Search */}
           <div className="p-3 border-b border-border">
@@ -471,7 +471,7 @@ const Onboarding = () => {
         </div>
 
         {/* ── RIGHT: Checklist detail ── */}
-        <div className="flex flex-col min-h-0 card-bg border border-border rounded-[16px] overflow-hidden">
+        <div className="flex flex-col h-[500px] lg:min-h-0 card-bg border border-border rounded-[16px] overflow-hidden">
           {!selectedTracker ? (
             <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
               <ClipboardList className="h-12 w-12 text-muted-foreground/15 mb-3" />
