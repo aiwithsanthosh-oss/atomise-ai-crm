@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { DollarSign, User, GripVertical, Trash2, Pencil, Plus, Search, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -153,25 +153,13 @@ const Pipeline = () => {
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   const [dealToDelete, setDealToDelete]   = useState<string | null>(null);
 
-  // ── Touch drag state for mobile ────────────────────────────────────────────
-  const touchDealRef = { current: null as string | null };
-
-  const handleTouchStart = (dealId: string) => {
-    touchDealRef.current = dealId;
-    setDraggedDeal(dealId);
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent, stage: string) => {
-    e.preventDefault();
-    if (!touchDealRef.current) return;
-    const deal = deals.find((d: any) => d.id === touchDealRef.current);
-    if (deal && deal.stage !== stage) {
-      updateStage.mutate({ id: touchDealRef.current, stage });
-    }
-    touchDealRef.current = null;
-    setDraggedDeal(null);
-    setDragOverStage(null);
-  };
+  // ── Touch drag state for mobile ───────────────────────────────────────────
+  const [touchDealId, setTouchDealId]     = useState<string | null>(null);
+  const [touchStage, setTouchStage]       = useState<string | null>(null);
+  const [touchActive, setTouchActive]     = useState(false);
+  const touchDealIdRef  = useRef<string | null>(null);
+  const touchActiveRef  = useRef(false);
+  const touchStageRef   = useRef<string | null>(null);
 
   // Edit dialog state
   const [editDealId, setEditDealId]   = useState<string | null>(null);
@@ -301,6 +289,48 @@ const Pipeline = () => {
     setDragOverStage(null);
   };
 
+  // ── Touch handlers for mobile drag ────────────────────────────────────────
+  // Uses native event listeners (not React synthetic) to allow preventDefault
+  // which stops page scroll during drag on mobile
+  const handleTouchStart = (dealId: string) => {
+    touchDealIdRef.current  = dealId;
+    touchActiveRef.current  = true;
+    touchStageRef.current   = null;
+    setTouchDealId(dealId);
+    setTouchActive(true);
+  };
+
+  const handleTouchEnd = () => {
+    const dealId = touchDealIdRef.current;
+    const stage  = touchStageRef.current;
+    if (dealId && stage) {
+      updateStage.mutate({ id: dealId, stage });
+      toast.success("Deal moved to " + stage);
+    }
+    touchDealIdRef.current  = null;
+    touchActiveRef.current  = false;
+    touchStageRef.current   = null;
+    setTouchDealId(null);
+    setTouchStage(null);
+    setTouchActive(false);
+  };
+
+  // Native touch move — attached with { passive: false } so preventDefault works
+  useEffect(() => {
+    const onTouchMove = (e: TouchEvent) => {
+      if (!touchActiveRef.current) return;
+      e.preventDefault(); // blocks scroll — only works with passive: false
+      const touch = e.touches[0];
+      const el = document.elementFromPoint(touch.clientX, touch.clientY);
+      const col = el?.closest("[data-stage]");
+      const stage = col?.getAttribute("data-stage") || null;
+      touchStageRef.current = stage;
+      setTouchStage(stage);
+    };
+    document.addEventListener("touchmove", onTouchMove, { passive: false });
+    return () => document.removeEventListener("touchmove", onTouchMove);
+  }, []);
+
   const openEdit = (deal: any) => {
     setEditDealId(deal.id);
     setEditName(deal.name ?? "");
@@ -323,20 +353,19 @@ const Pipeline = () => {
       </div>
 
       {/* Kanban board */}
-      <div className="flex-1 flex gap-3 md:gap-4 overflow-x-auto pb-2 min-h-0 touch-pan-x">
+      <div className="flex-1 flex gap-3 md:gap-4 overflow-x-auto pb-2 min-h-0">
         {stages.map((stage) => {
           const meta       = STAGE_META[stage];
           const stageDeals = deals.filter((d) => d.stage === stage);
-          const isOver     = dragOverStage === stage;
+          const isOver     = dragOverStage === stage || touchStage === stage;
 
           return (
             <div
               key={stage}
               className="flex-shrink-0 w-[17rem] flex flex-col"
+              data-stage={stage}
               onDragOver={(e) => { e.preventDefault(); setDragOverStage(stage); }}
               onDragLeave={() => setDragOverStage(null)}
-              onTouchMove={(e) => { e.preventDefault(); setDragOverStage(stage); }}
-              onTouchEnd={(e) => handleTouchEnd(e, stage)}
               onDrop={() => handleDrop(stage)}
             >
               {/* Column header */}
@@ -388,8 +417,9 @@ const Pipeline = () => {
                       onDragStart={() => setDraggedDeal(deal.id)}
                       onDragEnd={() => { setDraggedDeal(null); setDragOverStage(null); }}
                       onTouchStart={() => handleTouchStart(deal.id)}
+                      onTouchEnd={handleTouchEnd}
                       className="group rounded-[12px] p-3.5 border border-border card-bg cursor-grab active:cursor-grabbing transition-all duration-200 hover:border-purple-500/40 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-purple-500/10"
-                      style={{ opacity: draggedDeal === deal.id ? 0.45 : 1 }}
+                      style={{ opacity: (draggedDeal === deal.id || touchDealId === deal.id) ? 0.45 : 1 }}
                     >
                       {/* Deal name + action buttons */}
                       <div className="flex items-start justify-between mb-2.5">
