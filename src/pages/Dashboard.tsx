@@ -94,15 +94,13 @@ const PopPanel = ({
     <motion.div
       initial={{ opacity: 0, scale: 0.99 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ delay, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
       whileHover={{
         y: -6,
         scale: 1.012,
         boxShadow:
           "0 24px 60px rgba(0,0,0,0.6), 0 0 0 1.5px rgba(139,92,246,0.75), 0 0 50px rgba(139,92,246,0.15)",
       }}
-      // spring transition applies to whileHover lift + scale
-      transition={{ type: "spring", stiffness: 260, damping: 22 } as any}
+      transition={{ type: "spring", stiffness: 260, damping: 22, delay, duration: 0.4 } as any}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       className={`rounded-[24px] p-5 flex flex-col border card-bg overflow-hidden cursor-default transition-colors duration-300 ${
@@ -190,7 +188,7 @@ const Dashboard = () => {
 
       {/* ── HEADER ── */}
       <div className="shrink-0">
-        <h1 className="text-3xl font-display font-bold tracking-tighter text-foreground">Dashboard</h1>
+        <h1 className="text-2xl md:text-3xl font-display font-bold tracking-tighter text-foreground">Dashboard</h1>
         <p className="text-muted-foreground text-xs mt-0.5">Welcome to the Atomise CRM</p>
       </div>
 

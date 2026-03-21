@@ -284,7 +284,7 @@ const Appointments = () => {
       {/* ── Header ── */}
       <div className="flex items-center justify-between shrink-0">
         <div>
-          <h1 className="text-3xl font-display font-bold tracking-tighter text-foreground">Appointments</h1>
+          <h1 className="text-2xl md:text-3xl font-display font-bold tracking-tighter text-foreground">Appointments</h1>
           <p className="text-muted-foreground text-xs mt-0.5">Book and manage client appointments</p>
         </div>
         <Button onClick={() => { setForm(emptyForm); setModalOpen(true); }} className="gap-2 bg-primary hover:bg-primary/90 font-bold">
@@ -293,7 +293,7 @@ const Appointments = () => {
       </div>
 
       {/* ── Stats ── */}
-      <div className="grid grid-cols-3 gap-3 shrink-0">
+      <div className="grid grid-cols-3 md:grid-cols-3 gap-2 md:gap-3 shrink-0">
         {[
           { label: "Upcoming",  value: upcoming.length,                                                      color: "text-blue-400"    },
           { label: "Completed", value: appointments.filter((a) => a.status === "completed").length,           color: "text-emerald-400" },
@@ -327,7 +327,7 @@ const Appointments = () => {
         </div>
 
         {/* View switcher */}
-        <div className="flex items-center gap-1 p-1 rounded-xl border border-border bg-background/50">
+        <div className="flex items-center gap-1 p-1 rounded-xl border border-border bg-background/50 overflow-x-auto">
           {([
             { key: "week", icon: LayoutGrid, label: "Week" },
             { key: "day",  icon: Calendar,   label: "Day"  },
@@ -354,9 +354,9 @@ const Appointments = () => {
 
         {/* ── WEEK VIEW ── */}
         {view === "week" && (
-          <div className="h-full flex flex-col">
+          <div className="h-full flex flex-col overflow-x-auto">
             {/* Day headers — scrollbar-aware padding to stay aligned with time grid */}
-            <div className="grid border-b border-border shrink-0" style={{ gridTemplateColumns: "60px repeat(7, 1fr)", paddingRight: "15px" }}>
+            <div className="grid border-b border-border shrink-0" style={{ gridTemplateColumns: "60px repeat(7, minmax(80px, 1fr))", paddingRight: "15px", minWidth: "600px" }}>
               <div className="p-2" />
               {weekDays.map((day) => (
                 <div
@@ -375,7 +375,7 @@ const Appointments = () => {
             {/* Time grid */}
             <div className="flex-1 overflow-y-scroll">
               {HOURS.map((hour) => (
-                <div key={hour} className="border-b border-border/50 min-h-[56px]" style={{ display: "grid", gridTemplateColumns: "60px repeat(7, 1fr)" }}>
+                <div key={hour} className="border-b border-border/50 min-h-[56px]" style={{ display: "grid", gridTemplateColumns: "60px repeat(7, minmax(80px, 1fr))", minWidth: "600px" }}>
                   <div className="p-1 text-[10px] text-muted-foreground/40 font-bold text-right pr-2 pt-1">
                     {hour}:00
                   </div>
@@ -524,7 +524,7 @@ const Appointments = () => {
           }}
         >
           <div
-            className="card-bg border border-border rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl"
+            className="card-bg border border-border rounded-2xl w-full max-w-lg max-h-[95vh] md:max-h-[90vh] overflow-y-auto shadow-2xl mx-2 md:mx-0"
             onMouseDown={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between p-6 border-b border-border">

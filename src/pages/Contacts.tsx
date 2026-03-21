@@ -457,7 +457,7 @@ export default function Contacts() {
         {/* ── Header ── */}
         <div className="flex justify-between items-center shrink-0">
           <div>
-            <h1 className="text-3xl font-display font-bold tracking-tighter text-foreground">Contacts</h1>
+            <h1 className="text-2xl md:text-3xl font-display font-bold tracking-tighter text-foreground">Contacts</h1>
             <p className="text-xs text-muted-foreground/70 mt-0.5 font-medium">Communication Center · {leads.length} total</p>
           </div>
           {userRole === "admin" && (
@@ -593,7 +593,61 @@ export default function Contacts() {
         {/* ── Table ── */}
         <div className="flex-1 min-h-0 flex flex-col rounded-[18px] border border-border card-bg overflow-hidden">
           <div className="flex-1 overflow-y-auto">
-            <table className="w-full text-sm border-collapse">
+            {/* Mobile card view */}
+            <div className="block md:hidden">
+              {pagedLeads.map((lead) => {
+                const owner  = teamMembers.find((m) => m.id === lead.assigned_to);
+                const status = getStatusMeta(lead.status);
+                const isHot  = (lead.lead_score ?? 0) > 80;
+                return (
+                  <div key={lead.id} className="border-b border-border p-4 hover:bg-primary/5 transition-colors">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-bold text-foreground">{lead.name}</span>
+                          {isHot && <Flame className="h-3.5 w-3.5 text-orange-400 shrink-0" />}
+                        </div>
+                        <p className="text-xs text-muted-foreground/60 mt-0.5">{lead.email}</p>
+                        {lead.phone && <p className="text-xs text-primary font-bold mt-0.5">{lead.phone}</p>}
+                      </div>
+                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border shrink-0 ${status.bg} ${status.border} ${status.color}`}>
+                        {status.label}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between mt-3">
+                      <div className="flex items-center gap-2">
+                        {owner && (
+                          <span className="text-[11px] text-muted-foreground/60 flex items-center gap-1">
+                            <UserCheck className="h-3 w-3 text-primary" />{owner.full_name}
+                          </span>
+                        )}
+                        <span className="text-[11px] font-bold text-foreground">{lead.lead_score ?? 0}%</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => generateAiSummary(lead)} className="h-7 w-7 rounded-lg text-muted-foreground hover:text-purple-400">
+                          <Sparkles className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => setSelectedLead(lead)} className="h-7 w-7 rounded-lg text-muted-foreground hover:text-primary">
+                          <Clock className="h-3.5 w-3.5" />
+                        </Button>
+                        {userRole === "admin" && (
+                          <>
+                            <Button variant="ghost" size="icon" onClick={() => handleEditClick(lead)} className="h-7 w-7 rounded-lg text-muted-foreground hover:text-primary">
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => setContactToDelete(lead)} className="h-7 w-7 rounded-lg text-muted-foreground hover:text-red-400">
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {/* Desktop table view */}
+            <table className="hidden md:table w-full text-sm border-collapse">
               <thead className="sticky top-0 z-10 card-bg">
                 <tr className="border-b border-border">
                   <th className="w-12 px-4 py-2.5 text-center">

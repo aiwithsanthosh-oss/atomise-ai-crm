@@ -184,7 +184,7 @@ const Settings = () => {
 
         {/* Header */}
         <div className="shrink-0">
-          <h1 className="text-3xl font-display font-bold tracking-tighter text-foreground">Settings</h1>
+          <h1 className="text-2xl md:text-3xl font-display font-bold tracking-tighter text-foreground">Settings</h1>
           <p className="text-muted-foreground text-xs mt-0.5">Manage your team, roles and account preferences</p>
         </div>
 
@@ -219,7 +219,7 @@ const Settings = () => {
                 return (
                   <div
                     key={member.id}
-                    className={`flex items-center gap-4 p-4 rounded-xl border transition-all ${
+                    className={`flex flex-wrap items-center gap-3 p-3 md:p-4 rounded-xl border transition-all ${
                       member.is_active === false
                         ? "border-border bg-muted/20 opacity-60"
                         : "border-border bg-background/50 hover:border-primary/20"

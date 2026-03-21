@@ -245,7 +245,7 @@ const Tasks = () => {
       {/* ── Header ── */}
       <div className="flex items-end justify-between mb-5 shrink-0">
         <div>
-          <h1 className="text-3xl font-display font-bold tracking-tighter text-foreground">Tasks</h1>
+          <h1 className="text-2xl md:text-3xl font-display font-bold tracking-tighter text-foreground">Tasks</h1>
           <p className="text-muted-foreground text-xs mt-0.5">Stay on top of your work</p>
         </div>
         <div className="flex items-center gap-3">
@@ -262,7 +262,7 @@ const Tasks = () => {
       </div>
 
       {/* ── Filter tabs + Filter toggle ── */}
-      <div className="flex items-center justify-between mb-3 shrink-0">
+      <div className="flex flex-wrap items-center justify-between mb-3 shrink-0 gap-2">
         <div className="flex gap-2">
           {(["all", "pending", "completed"] as const).map((f) => (
             <button

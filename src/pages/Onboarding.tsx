@@ -353,7 +353,7 @@ const Onboarding = () => {
       {/* ── Header ── */}
       <div className="flex items-center justify-between shrink-0">
         <div>
-          <h1 className="text-3xl font-display font-bold tracking-tighter text-foreground">Onboarding</h1>
+          <h1 className="text-2xl md:text-3xl font-display font-bold tracking-tighter text-foreground">Onboarding</h1>
           <p className="text-muted-foreground text-xs mt-0.5">Post-sale client onboarding tracker with milestone tracking</p>
         </div>
         <Button onClick={() => setAddOpen(true)} className="gap-2 bg-primary hover:bg-primary/90 font-bold">
@@ -376,7 +376,7 @@ const Onboarding = () => {
       </div>
 
       {/* ── Main content — split panel ── */}
-      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-4">
+      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-3">
 
         {/* ── LEFT: Client list ── */}
         <div className="flex flex-col min-h-0 card-bg border border-border rounded-[16px] overflow-hidden">

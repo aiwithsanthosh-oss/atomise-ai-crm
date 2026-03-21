@@ -45,7 +45,7 @@ export function AppSidebar({ userRole }: Props) {
   const role = userRole ?? "";
 
   return (
-    <Sidebar collapsible="offcanvas" className="border-r border-border glass-card">
+    <Sidebar collapsible="offcanvas" className="border-r border-border glass-card z-50">
       <div className="flex h-full flex-col">
 
         {/* ── BRANDING HEADER ── */}
@@ -61,7 +61,7 @@ export function AppSidebar({ userRole }: Props) {
             />
           </div>
           <div className="flex flex-col">
-            <span className="font-display font-bold text-foreground text-base leading-tight tracking-tight">
+            <span className="font-display font-bold text-foreground text-sm md:text-base leading-tight tracking-tight">
               Atomise AI
             </span>
             <span className="text-[10px] font-bold text-primary/70 uppercase tracking-widest leading-none mt-0.5">

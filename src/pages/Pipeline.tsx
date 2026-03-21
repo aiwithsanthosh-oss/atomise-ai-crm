@@ -298,12 +298,12 @@ const Pipeline = () => {
 
       {/* Header */}
       <div className="mb-5 shrink-0">
-        <h1 className="text-3xl font-display font-bold tracking-tighter text-foreground">Pipeline</h1>
+        <h1 className="text-2xl md:text-3xl font-display font-bold tracking-tighter text-foreground">Pipeline</h1>
         <p className="text-muted-foreground text-xs mt-0.5">Drag deals between stages to update their status</p>
       </div>
 
       {/* Kanban board */}
-      <div className="flex-1 flex gap-4 overflow-x-auto pb-2 min-h-0">
+      <div className="flex-1 flex gap-3 md:gap-4 overflow-x-auto pb-2 min-h-0 touch-pan-x">
         {stages.map((stage) => {
           const meta       = STAGE_META[stage];
           const stageDeals = deals.filter((d) => d.stage === stage);

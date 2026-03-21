@@ -78,7 +78,7 @@ export function AppLayout({
           {/* Page content — fills remaining height, no overflow here.
               Each page (Dashboard, Contacts, Pipeline, Tasks) manages
               its own internal scroll so there is only ONE scrollbar. */}
-          <main className="flex-1 overflow-hidden bg-background">
+          <main className="flex-1 overflow-hidden overflow-y-auto bg-background">
             {children}
           </main>
 

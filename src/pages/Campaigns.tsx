@@ -299,7 +299,7 @@ const Campaigns = () => {
       {/* ── Header ── */}
       <div className="flex items-center justify-between shrink-0">
         <div>
-          <h1 className="text-3xl font-display font-bold tracking-tighter text-foreground">Campaigns</h1>
+          <h1 className="text-2xl md:text-3xl font-display font-bold tracking-tighter text-foreground">Campaigns</h1>
           <p className="text-muted-foreground text-xs mt-0.5">Automated messages triggered by pipeline stage or time</p>
         </div>
         <Button onClick={() => setCreateOpen(true)} className="gap-2 bg-primary hover:bg-primary/90 font-bold">
@@ -308,7 +308,7 @@ const Campaigns = () => {
       </div>
 
       {/* ── Stats row ── */}
-      <div className="grid grid-cols-3 gap-3 shrink-0">
+      <div className="grid grid-cols-3 gap-2 md:gap-3 shrink-0">
         {[
           { label: "Total Campaigns", value: campaigns.length, color: "text-foreground"  },
           { label: "Active",          value: activeCount,       color: "text-emerald-400" },
