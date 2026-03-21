@@ -592,7 +592,7 @@ export default function Contacts() {
 
         {/* ── Table ── */}
         <div className="flex-1 min-h-0 flex flex-col rounded-[18px] border border-border card-bg overflow-hidden">
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden">
             {/* Mobile card view */}
             <div className="block md:hidden">
               {pagedLeads.map((lead) => {
@@ -721,7 +721,7 @@ export default function Contacts() {
                       </td>
 
                       {/* Lead info */}
-                      <td className="px-4 py-2 min-w-[200px]">
+                      <td className="px-4 py-2">
                         <div className="flex flex-col gap-1">
                           {/* Name */}
                           <div className="flex items-center gap-2">

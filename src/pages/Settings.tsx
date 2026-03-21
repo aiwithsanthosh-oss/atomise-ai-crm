@@ -219,49 +219,52 @@ const Settings = () => {
                 return (
                   <div
                     key={member.id}
-                    className={`flex flex-wrap items-center gap-3 p-3 md:p-4 rounded-xl border transition-all ${
+                    className={`flex flex-col gap-2 p-3 rounded-xl border transition-all ${
                       member.is_active === false
                         ? "border-border bg-muted/20 opacity-60"
                         : "border-border bg-background/50 hover:border-primary/20"
                     }`}
                   >
-                    {/* Avatar */}
-                    <div className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 font-bold text-sm ${
-                      member.role === "admin" ? "bg-purple-500/20 text-purple-400" : "bg-blue-500/20 text-blue-400"
-                    }`}>
-                      {(member.full_name || member.email || "?").charAt(0).toUpperCase()}
+                    {/* Row 1 — Avatar + Info */}
+                    <div className="flex items-center gap-3">
+                      <div className={`h-9 w-9 rounded-full flex items-center justify-center shrink-0 font-bold text-sm ${
+                        member.role === "admin" ? "bg-purple-500/20 text-purple-400" : "bg-blue-500/20 text-blue-400"
+                      }`}>
+                        {(member.full_name || member.email || "?").charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-sm font-bold text-foreground truncate">
+                            {member.full_name || "Unnamed"}
+                          </span>
+                          {isCurrentUser && (
+                            <span className="text-[10px] font-black uppercase tracking-widest text-primary/60 bg-primary/10 px-1.5 py-0.5 rounded-full">
+                              You
+                            </span>
+                          )}
+                          {member.is_active === false && (
+                            <span className="text-[10px] font-black uppercase tracking-widest text-red-400/70 bg-red-500/10 px-1.5 py-0.5 rounded-full">
+                              Inactive
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex flex-col gap-0 mt-0.5">
+                          {member.email && (
+                            <span className="text-[10px] text-muted-foreground/60 flex items-center gap-1 truncate">
+                              <Mail className="h-2.5 w-2.5 shrink-0" />{member.email}
+                            </span>
+                          )}
+                          {member.mobile_number && (
+                            <span className="text-[10px] text-muted-foreground/60 flex items-center gap-1">
+                              <Phone className="h-2.5 w-2.5 shrink-0" />{member.mobile_number}
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
 
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-bold text-foreground truncate">
-                          {member.full_name || "Unnamed"}
-                        </span>
-                        {isCurrentUser && (
-                          <span className="text-[10px] font-black uppercase tracking-widest text-primary/60 bg-primary/10 px-1.5 py-0.5 rounded-full">
-                            You
-                          </span>
-                        )}
-                        {member.is_active === false && (
-                          <span className="text-[10px] font-black uppercase tracking-widest text-red-400/70 bg-red-500/10 px-1.5 py-0.5 rounded-full">
-                            Inactive
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-3 mt-0.5">
-                        {member.email && (
-                          <span className="text-[11px] text-muted-foreground/60 flex items-center gap-1">
-                            <Mail className="h-2.5 w-2.5" />{member.email}
-                          </span>
-                        )}
-                        {member.mobile_number && (
-                          <span className="text-[11px] text-muted-foreground/60 flex items-center gap-1">
-                            <Phone className="h-2.5 w-2.5" />{member.mobile_number}
-                          </span>
-                        )}
-                      </div>
-                    </div>
+                    {/* Row 2 — Role + Action */}
+                    <div className="flex items-center justify-between gap-2 pl-12">
 
                     {/* Role selector */}
                     <div className="shrink-0">
@@ -317,6 +320,7 @@ const Settings = () => {
                         {member.is_active === false ? "Activate" : "Deactivate"}
                       </button>
                     )}
+                    </div>{/* end Row 2 */}
                   </div>
                 );
               })}
