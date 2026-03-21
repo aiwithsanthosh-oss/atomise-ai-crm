@@ -153,6 +153,26 @@ const Pipeline = () => {
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   const [dealToDelete, setDealToDelete]   = useState<string | null>(null);
 
+  // ── Touch drag state for mobile ────────────────────────────────────────────
+  const touchDealRef = { current: null as string | null };
+
+  const handleTouchStart = (dealId: string) => {
+    touchDealRef.current = dealId;
+    setDraggedDeal(dealId);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent, stage: string) => {
+    e.preventDefault();
+    if (!touchDealRef.current) return;
+    const deal = deals.find((d: any) => d.id === touchDealRef.current);
+    if (deal && deal.stage !== stage) {
+      updateStage.mutate({ id: touchDealRef.current, stage });
+    }
+    touchDealRef.current = null;
+    setDraggedDeal(null);
+    setDragOverStage(null);
+  };
+
   // Edit dialog state
   const [editDealId, setEditDealId]   = useState<string | null>(null);
   const [editName, setEditName]       = useState("");
@@ -315,6 +335,8 @@ const Pipeline = () => {
               className="flex-shrink-0 w-[17rem] flex flex-col"
               onDragOver={(e) => { e.preventDefault(); setDragOverStage(stage); }}
               onDragLeave={() => setDragOverStage(null)}
+              onTouchMove={(e) => { e.preventDefault(); setDragOverStage(stage); }}
+              onTouchEnd={(e) => handleTouchEnd(e, stage)}
               onDrop={() => handleDrop(stage)}
             >
               {/* Column header */}
@@ -364,7 +386,8 @@ const Pipeline = () => {
                       key={deal.id}
                       draggable
                       onDragStart={() => setDraggedDeal(deal.id)}
-                      onDragEnd={() => setDraggedDeal(null)}
+                      onDragEnd={() => { setDraggedDeal(null); setDragOverStage(null); }}
+                      onTouchStart={() => handleTouchStart(deal.id)}
                       className="group rounded-[12px] p-3.5 border border-border card-bg cursor-grab active:cursor-grabbing transition-all duration-200 hover:border-purple-500/40 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-purple-500/10"
                       style={{ opacity: draggedDeal === deal.id ? 0.45 : 1 }}
                     >
