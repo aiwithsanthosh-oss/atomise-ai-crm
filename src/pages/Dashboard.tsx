@@ -184,7 +184,7 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className="h-full w-full flex flex-col overflow-hidden page-bg px-6 pt-5 pb-5 gap-4">
+    <div className="h-full w-full flex flex-col overflow-y-auto md:overflow-hidden page-bg px-4 md:px-6 pt-4 md:pt-5 pb-5 gap-3 md:gap-4">
 
       {/* ── HEADER ── */}
       <div className="shrink-0">
@@ -193,14 +193,14 @@ const Dashboard = () => {
       </div>
 
       {/* ── KPI CARDS ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 shrink-0">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 shrink-0">
         {kpis.map((stat, i) => (
           <BrandedKPICard key={stat.label} {...stat} delay={i * 0.1} />
         ))}
       </div>
 
       {/* ── BOTTOM PANELS ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 min-h-0">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4 flex-none lg:flex-1 lg:min-h-0">
 
         {/* ── Pipeline Overview ── */}
         <PopPanel delay={0.4}>
@@ -209,7 +209,7 @@ const Dashboard = () => {
             Pipeline Overview
           </h3>
           {/* top margin on chart to give LabelList space above bars */}
-          <div className="flex-1 min-h-0 w-full">
+          <div className="h-[220px] md:h-auto md:flex-1 md:min-h-0 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={pipelineData} margin={{ top: 22, right: 20, left: -25, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
