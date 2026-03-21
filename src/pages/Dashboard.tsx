@@ -119,11 +119,11 @@ const BarCountLabel = (props: any) => {
   return (
     <text
       x={x + width / 2}
-      y={y - 6}
+      y={y - 4}
       textAnchor="middle"
-      fill="#ffffff"
-      fontSize={11}
-      fontWeight={800}
+      fill="#a78bfa"
+      fontSize={12}
+      fontWeight={900}
       fontFamily="inherit"
     >
       {value}
@@ -209,9 +209,9 @@ const Dashboard = () => {
             Pipeline Overview
           </h3>
           {/* top margin on chart to give LabelList space above bars */}
-          <div className="h-[220px] md:h-auto md:flex-1 md:min-h-0 w-full">
+          <div className="h-[250px] md:h-auto md:flex-1 md:min-h-0 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={pipelineData} margin={{ top: 22, right: 20, left: -25, bottom: 0 }}>
+              <BarChart data={pipelineData} margin={{ top: 30, right: 20, left: -25, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
                 <XAxis
                   dataKey="stage"
