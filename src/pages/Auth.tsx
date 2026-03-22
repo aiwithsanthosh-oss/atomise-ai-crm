@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { motion, AnimatePresence } from "framer-motion";
 import { PASSWORD_RULES, validatePassword, passwordStrength } from "@/lib/passwordValidation";
 
-type AuthView = "login" | "signup" | "forgot_password";
+type AuthView = "login" | "signup" | "forgot_password" | "update_password";
 
 // ─── Password strength bar ────────────────────────────────────────────────────
 function StrengthBar({ password }: { password: string }) {
@@ -85,6 +85,22 @@ export default function Auth() {
   useEffect(() => {
     const savedEmail = localStorage.getItem("atomise_remember_email");
     if (savedEmail) { setEmail(savedEmail); setRememberMe(true); }
+  }, []);
+
+  // ── Detect Supabase password recovery link ────────────────────────────────
+  useEffect(() => {
+    // Supabase appends #access_token=...&type=recovery to the redirect URL
+    const hash = window.location.hash;
+    if (hash && hash.includes("type=recovery")) {
+      setView("update_password");
+    }
+    // Also listen for onAuthStateChange PASSWORD_RECOVERY event
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setView("update_password");
+      }
+    });
+    return () => subscription.unsubscribe();
   }, []);
 
   const handleViewChange = (newView: AuthView) => {
@@ -179,6 +195,30 @@ export default function Auth() {
     if (data.session) navigate("/");
     else {
       toast({ title: "Success!", description: "Check your email for the confirmation link." });
+      handleViewChange("login");
+    }
+    setLoading(false);
+  };
+
+  // ── Update password — called from recovery link ───────────────────────────
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const errors: typeof fieldErrors = {};
+    const pwErr = validatePassword(password);
+    if (!password.trim())
+      errors.password = "Password is required";
+    else if (pwErr)
+      errors.password = pwErr;
+    if (Object.keys(errors).length > 0) { setFieldErrors(errors); setPasswordError(errors.password || null); return; }
+    setFieldErrors({});
+    setPasswordError(null);
+    setLoading(true);
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) {
+      toast({ variant: "destructive", title: "Update Failed", description: error.message });
+    } else {
+      toast({ title: "Password Updated!", description: "Your password has been changed. Please log in." });
+      await supabase.auth.signOut();
       handleViewChange("login");
     }
     setLoading(false);
@@ -389,6 +429,41 @@ export default function Auth() {
                 <button type="button" onClick={() => handleViewChange("login")} className="flex items-center justify-center w-full gap-2 text-sm text-muted-foreground hover:text-primary pt-2">
                   <ArrowLeft className="h-4 w-4" /> Back to Login
                 </button>
+              </form>
+            </motion.div>
+          )}
+
+          {/* ── UPDATE PASSWORD (from reset email link) ── */}
+          {view === "update_password" && (
+            <motion.div key="update_password" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="space-y-6">
+              <div className="space-y-2 text-center flex flex-col items-center">
+                <img src="/logo.png" alt="Atomise AI" className="w-16 h-16 object-contain mb-2" />
+                <h2 className="text-2xl font-bold tracking-tight text-white font-display">Set New Password</h2>
+                <p className="text-sm text-muted-foreground">Enter your new password below.</p>
+              </div>
+              <form onSubmit={handleUpdatePassword} className="space-y-4">
+                <div className="space-y-1">
+                  <Label>New Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Min 6 chars, 1 uppercase, 1 number, 1 special"
+                      value={password}
+                      onChange={(e) => { setPassword(e.target.value); setPasswordError(null); setFieldErrors((p) => ({ ...p, password: undefined })); }}
+                      className={`${inputCls} pl-10 pr-10 ${passwordError ? "border-red-500" : ""}`}
+                    />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-white transition-colors">
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  <PasswordChecklist password={password} />
+                  <StrengthBar password={password} />
+                  {passwordError && <p className="text-xs text-red-400 font-medium mt-1">{passwordError}</p>}
+                </div>
+                <Button type="submit" className="w-full h-11 font-bold shadow-lg rounded-xl" disabled={loading}>
+                  {loading ? "Updating..." : "Update Password"}
+                </Button>
               </form>
             </motion.div>
           )}
