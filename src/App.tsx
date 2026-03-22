@@ -113,7 +113,7 @@ const App = () => {
   // 1. Initial auth session is being checked (loading)
   // 2. Session exists but role is still being fetched (roleLoading)
   // This prevents the brief 404 flash between login and dashboard render
-  if (loading || (session && roleLoading)) {
+  if (loading || (session && roleLoading) || (isRecovery && loading)) {
     return (
       <div className="h-screen w-screen bg-background flex items-center justify-center text-foreground font-sans">
         <div className="flex flex-col items-center gap-4">
