@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import {
   Plus, ChevronLeft, ChevronRight, Calendar, List,
   Clock, User, X, Check, Ban, Pencil, Phone, Mail,
-  AlignLeft, LayoutGrid,
+  AlignLeft, LayoutGrid, AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,6 +52,8 @@ const STATUS_STYLES = {
   scheduled:  { label: "Scheduled",  color: "text-blue-400",    bg: "bg-blue-500/10",    border: "border-blue-500/30"    },
   completed:  { label: "Completed",  color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/30" },
   cancelled:  { label: "Cancelled",  color: "text-red-400",     bg: "bg-red-500/10",     border: "border-red-500/30"     },
+  // ── FIXED: added missed status ──
+  missed:     { label: "Missed",     color: "text-orange-400",  bg: "bg-orange-500/10",  border: "border-orange-500/30"  },
 };
 
 const DURATIONS = [
@@ -72,6 +74,19 @@ const emptyForm = {
   notes: "",
 };
 
+// ─── FIXED: helper to compute effective display status ────────────────────────
+// Does NOT write to DB — derives "missed" on the fly for any scheduled
+// appointment whose date+time has already passed
+
+function getEffectiveStatus(appt: Appointment): "scheduled" | "completed" | "cancelled" | "missed" {
+  if (appt.status !== "scheduled") return appt.status;
+  const [year, month, day]   = appt.appointment_date.split("-").map(Number);
+  const [hour, minute]       = appt.start_time.split(":").map(Number);
+  const apptDateTime         = new Date(year, month - 1, day, hour, minute);
+  if (apptDateTime < new Date()) return "missed";
+  return "scheduled";
+}
+
 // ─── Appointment Pill (used in calendar cells) ────────────────────────────────
 
 function AppointmentPill({
@@ -81,7 +96,9 @@ function AppointmentPill({
   appt: AppointmentWithContact;
   onClick: () => void;
 }) {
-  const s = STATUS_STYLES[appt.status];
+  // ── FIXED: use effective status for pill color ──
+  const effectiveStatus = getEffectiveStatus(appt);
+  const s = STATUS_STYLES[effectiveStatus];
   const fullLabel = `${appt.start_time.slice(0, 5)} ${appt.title}`;
   return (
     <button
@@ -116,7 +133,6 @@ const Appointments = () => {
   const [contactSearch, setContactSearch]   = useState("");
 
   const queryClient = useQueryClient();
-  // ── Modal open ref + global tab-switch blocker ────────────────────────────
   const modalOpenRef = useRef(false);
 
   useEffect(() => {
@@ -157,11 +173,9 @@ const Appointments = () => {
         .from("appointments").select("*").order("appointment_date").order("start_time");
       if (error) throw error;
       if (!appts?.length) return [];
-
       const contactIds = [...new Set(appts.map((a) => a.contact_id))];
       const { data: contactsData } = await supabase
         .from("contacts").select("id, name, email, phone").in("id", contactIds);
-
       return appts.map((a) => ({
         ...a,
         contact: contactsData?.find((c) => c.id === a.contact_id) || null,
@@ -251,11 +265,14 @@ const Appointments = () => {
   const apptsByDate = (date: Date) =>
     appointments.filter((a) => isSameDay(parseISO(a.appointment_date), date));
 
-  // ── Stats ──────────────────────────────────────────────────────────────────
+  // ── Stats — FIXED: added missed count ─────────────────────────────────────
 
   const upcoming = appointments.filter(
-    (a) => a.status === "scheduled" && parseISO(a.appointment_date) >= new Date(new Date().setHours(0,0,0,0))
+    (a) => a.status === "scheduled" && getEffectiveStatus(a) === "scheduled"
   );
+  const missedCount = appointments.filter(
+    (a) => getEffectiveStatus(a) === "missed"
+  ).length;
 
   // ── Filtered contacts for dropdown ────────────────────────────────────────
 
@@ -292,12 +309,13 @@ const Appointments = () => {
         </Button>
       </div>
 
-      {/* ── Stats ── */}
-      <div className="grid grid-cols-3 md:grid-cols-3 gap-2 md:gap-3 shrink-0">
+      {/* ── Stats — FIXED: 4 cards now including Missed ── */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3 shrink-0">
         {[
-          { label: "Upcoming",  value: upcoming.length,                                                      color: "text-blue-400"    },
-          { label: "Completed", value: appointments.filter((a) => a.status === "completed").length,           color: "text-emerald-400" },
-          { label: "Cancelled", value: appointments.filter((a) => a.status === "cancelled").length,           color: "text-red-400"     },
+          { label: "Upcoming",  value: upcoming.length,                                              color: "text-blue-400"    },
+          { label: "Completed", value: appointments.filter((a) => a.status === "completed").length,  color: "text-emerald-400" },
+          { label: "Missed",    value: missedCount,                                                  color: "text-orange-400"  },
+          { label: "Cancelled", value: appointments.filter((a) => a.status === "cancelled").length,  color: "text-red-400"     },
         ].map((s) => (
           <div key={s.label} className="card-bg border border-border rounded-[14px] px-4 py-3 flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/60">{s.label}</span>
@@ -308,7 +326,6 @@ const Appointments = () => {
 
       {/* ── Toolbar ── */}
       <div className="flex items-center justify-between shrink-0">
-        {/* Navigation */}
         <div className="flex items-center gap-2">
           {view !== "list" && (
             <>
@@ -325,8 +342,6 @@ const Appointments = () => {
           )}
           <span className="text-sm font-bold text-foreground ml-2">{headerLabel()}</span>
         </div>
-
-        {/* View switcher */}
         <div className="flex items-center gap-1 p-1 rounded-xl border border-border bg-background/50 overflow-x-auto">
           {([
             { key: "week", icon: LayoutGrid, label: "Week" },
@@ -355,30 +370,19 @@ const Appointments = () => {
         {/* ── WEEK VIEW ── */}
         {view === "week" && (
           <div className="h-full flex flex-col overflow-x-auto">
-            {/* Day headers — scrollbar-aware padding to stay aligned with time grid */}
             <div className="grid border-b border-border shrink-0" style={{ gridTemplateColumns: "60px repeat(7, minmax(80px, 1fr))", paddingRight: "15px", minWidth: "600px" }}>
               <div className="p-2" />
               {weekDays.map((day) => (
-                <div
-                  key={day.toISOString()}
-                  className={`p-2 text-center border-l border-border ${isToday(day) ? "bg-primary/5" : ""}`}
-                >
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
-                    {format(day, "EEE")}
-                  </p>
-                  <p className={`text-sm font-black mt-0.5 ${isToday(day) ? "text-primary" : "text-foreground"}`}>
-                    {format(day, "dd")}
-                  </p>
+                <div key={day.toISOString()} className={`p-2 text-center border-l border-border ${isToday(day) ? "bg-primary/5" : ""}`}>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">{format(day, "EEE")}</p>
+                  <p className={`text-sm font-black mt-0.5 ${isToday(day) ? "text-primary" : "text-foreground"}`}>{format(day, "dd")}</p>
                 </div>
               ))}
             </div>
-            {/* Time grid */}
             <div className="flex-1 overflow-y-scroll">
               {HOURS.map((hour) => (
                 <div key={hour} className="border-b border-border/50 min-h-[56px]" style={{ display: "grid", gridTemplateColumns: "60px repeat(7, minmax(80px, 1fr))", minWidth: "600px" }}>
-                  <div className="p-1 text-[10px] text-muted-foreground/40 font-bold text-right pr-2 pt-1">
-                    {hour}:00
-                  </div>
+                  <div className="p-1 text-[10px] text-muted-foreground/40 font-bold text-right pr-2 pt-1">{hour}:00</div>
                   {weekDays.map((day) => {
                     const dayAppts = apptsByDate(day).filter((a) => {
                       const h = parseInt(a.start_time.split(":")[0]);
@@ -419,12 +423,12 @@ const Appointments = () => {
                 const hourAppts = apptsByDate(currentDate).filter((a) => parseInt(a.start_time.split(":")[0]) === hour);
                 return (
                   <div key={hour} className="flex gap-3 border-b border-border/50 min-h-[64px] p-2">
-                    <div className="text-[11px] text-muted-foreground/40 font-bold w-12 text-right shrink-0 pt-1">
-                      {hour}:00
-                    </div>
+                    <div className="text-[11px] text-muted-foreground/40 font-bold w-12 text-right shrink-0 pt-1">{hour}:00</div>
                     <div className="flex-1 space-y-1.5">
                       {hourAppts.map((appt) => {
-                        const s = STATUS_STYLES[appt.status];
+                        // ── FIXED: use effective status for day view card color ──
+                        const effectiveStatus = getEffectiveStatus(appt);
+                        const s = STATUS_STYLES[effectiveStatus];
                         return (
                           <button
                             key={appt.id}
@@ -442,6 +446,12 @@ const Appointments = () => {
                               <span className="text-[11px] text-muted-foreground/60 flex items-center gap-1">
                                 <User className="h-2.5 w-2.5" />{appt.contact?.name || "Unknown"}
                               </span>
+                              {/* ── FIXED: show missed badge in day view ── */}
+                              {effectiveStatus === "missed" && (
+                                <span className="text-[10px] font-bold text-orange-400 flex items-center gap-1">
+                                  <AlertCircle className="h-2.5 w-2.5" /> Missed
+                                </span>
+                              )}
                             </div>
                           </button>
                         );
@@ -474,19 +484,19 @@ const Appointments = () => {
                 </div>
               )}
               {appointments.map((appt) => {
-                const s = STATUS_STYLES[appt.status];
+                // ── FIXED: use effective status for list view badge ──
+                const effectiveStatus = getEffectiveStatus(appt);
+                const s = STATUS_STYLES[effectiveStatus];
                 return (
                   <button
                     key={appt.id}
                     onClick={() => setDetailAppt(appt)}
                     className="w-full text-left flex items-center gap-4 p-4 border-b border-border/50 hover:bg-primary/5 transition-colors"
                   >
-                    {/* Date block */}
                     <div className="shrink-0 w-12 text-center">
                       <p className="text-[10px] font-bold uppercase text-muted-foreground/50">{format(parseISO(appt.appointment_date), "MMM")}</p>
                       <p className="text-xl font-black text-foreground leading-none">{format(parseISO(appt.appointment_date), "dd")}</p>
                     </div>
-                    {/* Info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-bold text-foreground truncate">{appt.title}</span>
@@ -512,7 +522,7 @@ const Appointments = () => {
         )}
       </div>
 
-      {/* ── New Appointment Modal — always mounted, immune to tab switches ── */}
+      {/* ── New Appointment Modal ── */}
       {createPortal(
         <div
           className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
@@ -536,15 +546,11 @@ const Appointments = () => {
                 <X className="h-4 w-4" />
               </button>
             </div>
-
             <div className="p-6 space-y-4">
-              {/* Title */}
               <div>
                 <label className={fieldLabel}>Appointment Title *</label>
                 <Input className={fieldInput} placeholder="e.g. Product Demo Call" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
               </div>
-
-              {/* Contact */}
               <div>
                 <label className={fieldLabel}>Client *</label>
                 <Select value={form.contact_id} onValueChange={(v) => setForm({ ...form, contact_id: v })}>
@@ -574,8 +580,6 @@ const Appointments = () => {
                   </SelectContent>
                 </Select>
               </div>
-
-              {/* Date + Time */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={fieldLabel}>Date *</label>
@@ -596,8 +600,6 @@ const Appointments = () => {
                   />
                 </div>
               </div>
-
-              {/* Duration */}
               <div>
                 <label className={fieldLabel}>Duration</label>
                 <Select value={form.duration_minutes} onValueChange={(v) => setForm({ ...form, duration_minutes: v })}>
@@ -611,8 +613,6 @@ const Appointments = () => {
                   </SelectContent>
                 </Select>
               </div>
-
-              {/* Notes */}
               <div>
                 <label className={fieldLabel}>Notes</label>
                 <textarea
@@ -623,15 +623,12 @@ const Appointments = () => {
                   onChange={(e) => setForm({ ...form, notes: e.target.value })}
                 />
               </div>
-
-              {/* n8n note */}
               <div className="p-3 rounded-xl bg-primary/5 border border-primary/15">
                 <p className="text-[10px] text-primary/70 font-medium">
                   📧 Email + WhatsApp confirmation will be sent to the client automatically via n8n after booking.
                 </p>
               </div>
             </div>
-
             <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-border">
               <Button variant="outline" onClick={() => { setModalOpen(false); setForm(emptyForm); }}>Cancel</Button>
               <Button onClick={() => createMutation.mutate()} disabled={createMutation.isPending} className="gap-2 font-bold">
@@ -655,13 +652,14 @@ const Appointments = () => {
             className="card-bg border border-border rounded-2xl w-full max-w-sm h-full max-h-[90vh] overflow-y-auto shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
             <div className="flex items-start justify-between p-6 border-b border-border">
               <div className="flex-1 min-w-0">
                 <h2 className="text-base font-bold text-foreground truncate">{detailAppt.title}</h2>
                 <div className="flex items-center gap-2 mt-1">
                   {(() => {
-                    const s = STATUS_STYLES[detailAppt.status];
+                    // ── FIXED: use effective status in detail panel ──
+                    const effectiveStatus = getEffectiveStatus(detailAppt);
+                    const s = STATUS_STYLES[effectiveStatus];
                     return (
                       <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${s.bg} ${s.border} ${s.color}`}>
                         {s.label}
@@ -674,10 +672,7 @@ const Appointments = () => {
                 <X className="h-4 w-4" />
               </button>
             </div>
-
-            {/* Details */}
             <div className="p-6 space-y-4">
-              {/* Date + Time */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="p-3 rounded-xl bg-background/50 border border-border">
                   <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50 mb-1">Date</p>
@@ -688,8 +683,6 @@ const Appointments = () => {
                   <p className="text-sm font-bold text-foreground">{detailAppt.start_time.slice(0, 5)} · {detailAppt.duration_minutes}min</p>
                 </div>
               </div>
-
-              {/* Contact */}
               {detailAppt.contact && (
                 <div className="p-3 rounded-xl bg-background/50 border border-border space-y-2">
                   <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50">Client</p>
@@ -713,23 +706,19 @@ const Appointments = () => {
                   </div>
                 </div>
               )}
-
-              {/* Notes */}
               {detailAppt.notes && (
                 <div className="p-3 rounded-xl bg-background/50 border border-border">
                   <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50 mb-1">Notes</p>
                   <p className="text-sm text-muted-foreground/70 whitespace-pre-line">{detailAppt.notes}</p>
                 </div>
               )}
-
-              {/* Created */}
               <p className="text-[10px] text-muted-foreground/30 text-center">
                 Booked {formatDistanceToNow(new Date(detailAppt.created_at), { addSuffix: true })}
               </p>
             </div>
 
-            {/* Actions */}
-            {detailAppt.status === "scheduled" && (
+            {/* ── FIXED: actions shown for both scheduled and missed ── */}
+            {(detailAppt.status === "scheduled") && (
               <div className="px-6 pb-6 space-y-2">
                 <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50 mb-2">Update Status</p>
                 <div className="grid grid-cols-2 gap-2">

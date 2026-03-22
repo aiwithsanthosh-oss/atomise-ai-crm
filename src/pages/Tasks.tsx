@@ -120,8 +120,6 @@ const Tasks = () => {
     mutationFn: async () => {
       const trimmed = title.trim();
       if (!trimmed) throw new Error("Task title is required");
-      // Supabase Database Webhook automatically fires n8n when a task is inserted
-      // No browser fetch needed — eliminates CORS issues entirely
       const { error } = await supabase.from("tasks").insert({
         title: trimmed,
         status: "pending",
@@ -163,7 +161,6 @@ const Tasks = () => {
       queryClient.invalidateQueries({ queryKey: ["tasks-done-count"] });
       setTaskToDelete(null);
       toast.success("Task deleted");
-      // If last item on current page was deleted, go back one page
       if (pagedTasks.length === 1 && currentPage > 1) {
         setCurrentPage((p) => p - 1);
       }
@@ -185,7 +182,6 @@ const Tasks = () => {
     }).length,
   [tasks]);
 
-  // ── Active filter count for badge ────────────────────────────────────────
   const activeFilterCount = [
     filterContact !== "all",
     filterPriority !== "all",
@@ -193,24 +189,17 @@ const Tasks = () => {
     filterDateTo !== "",
   ].filter(Boolean).length;
 
-  // ── Apply all filters ─────────────────────────────────────────────────────
   const filtered = useMemo(() => {
     let result = tasks;
-    // Status tab
     if (filterStatus === "pending")   result = result.filter((t) => (t.status ?? "pending") !== "completed");
     if (filterStatus === "completed") result = result.filter((t) => (t.status ?? "pending") === "completed");
-    // Contact filter
     if (filterContact !== "all") result = result.filter((t) => t.contact_id === filterContact);
-    // Priority filter
     if (filterPriority !== "all") result = result.filter((t) => (t.priority ?? "medium") === filterPriority);
-    // Due date from
     if (filterDateFrom) result = result.filter((t) => t.due_date && t.due_date >= filterDateFrom);
-    // Due date to
     if (filterDateTo) result = result.filter((t) => t.due_date && t.due_date <= filterDateTo + "T23:59:59");
     return result;
   }, [tasks, filterStatus, filterContact, filterPriority, filterDateFrom, filterDateTo]);
 
-  // Pagination — reset to page 1 whenever filter changes
   const totalPages  = Math.max(1, Math.ceil(filtered.length / TASKS_PER_PAGE));
   const safePage    = Math.min(currentPage, totalPages);
   const pagedTasks  = filtered.slice((safePage - 1) * TASKS_PER_PAGE, safePage * TASKS_PER_PAGE);
@@ -232,7 +221,6 @@ const Tasks = () => {
     setCurrentPage(1);
   };
 
-  // Contacts filtered by search for dropdown
   const filteredContactOptions = contacts.filter((c) =>
     contactSearch === "" || c.name.toLowerCase().includes(contactSearch.toLowerCase())
   );
@@ -241,6 +229,20 @@ const Tasks = () => {
 
   return (
     <div className="h-full w-full flex flex-col overflow-hidden page-bg px-6 pt-5 pb-5">
+
+      {/* ── Global style for date picker calendar icon ── */}
+      {/* FIXED: using injected <style> tag to reliably make calendar icon white in dark theme */}
+      <style>{`
+        input[type="date"]::-webkit-calendar-picker-indicator {
+          filter: invert(1) brightness(3);
+          cursor: pointer;
+          opacity: 0.8;
+        }
+        input[type="date"]::-webkit-calendar-picker-indicator:hover {
+          opacity: 1;
+          filter: invert(0.5) sepia(1) saturate(5) hue-rotate(230deg) brightness(1.5);
+        }
+      `}</style>
 
       {/* ── Header ── */}
       <div className="flex items-end justify-between mb-5 shrink-0">
@@ -282,7 +284,6 @@ const Tasks = () => {
           <span className="text-[11px] text-muted-foreground/40 font-medium">
             {filtered.length} task{filtered.length !== 1 ? "s" : ""}
           </span>
-          {/* Filter toggle button */}
           <button
             onClick={() => setShowFilters((v) => !v)}
             className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all duration-200 ${
@@ -309,7 +310,7 @@ const Tasks = () => {
         <div className="shrink-0 mb-3 p-4 rounded-[14px] border border-border card-bg space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
 
-            {/* Contact filter — dropdown + search */}
+            {/* Contact filter */}
             <div className="space-y-1.5">
               <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
                 Contact / Lead
@@ -323,7 +324,6 @@ const Tasks = () => {
                     <SelectValue placeholder="All contacts" />
                   </SelectTrigger>
                   <SelectContent className="bg-popover border-border max-h-60">
-                    {/* Search inside dropdown */}
                     <div className="px-2 py-1.5 border-b border-border">
                       <input
                         placeholder="Search contact..."
@@ -367,22 +367,13 @@ const Tasks = () => {
                 <SelectContent className="bg-popover border-border">
                   <SelectItem value="all" className="text-xs">All priorities</SelectItem>
                   <SelectItem value="high" className="text-xs">
-                    <div className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full bg-red-400" />
-                      High
-                    </div>
+                    <div className="flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-red-400" />High</div>
                   </SelectItem>
                   <SelectItem value="medium" className="text-xs">
-                    <div className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full bg-amber-400" />
-                      Medium
-                    </div>
+                    <div className="flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-amber-400" />Medium</div>
                   </SelectItem>
                   <SelectItem value="low" className="text-xs">
-                    <div className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full bg-blue-400" />
-                      Low
-                    </div>
+                    <div className="flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-blue-400" />Low</div>
                   </SelectItem>
                 </SelectContent>
               </Select>
@@ -398,26 +389,22 @@ const Tasks = () => {
                   type="date"
                   value={filterDateFrom}
                   onChange={(e) => { setFilterDateFrom(e.target.value); setCurrentPage(1); }}
-                  className="flex-1 h-9 px-2 text-xs bg-background border border-border rounded-lg text-foreground [color-scheme:light] dark:[color-scheme:dark] focus:outline-none focus:border-primary/50"
+                  className="flex-1 h-9 px-2 text-xs bg-background border border-border rounded-lg text-foreground [color-scheme:dark] focus:outline-none focus:border-primary/50"
                 />
                 <span className="text-muted-foreground/40 text-xs font-bold shrink-0">to</span>
                 <input
                   type="date"
                   value={filterDateTo}
                   onChange={(e) => { setFilterDateTo(e.target.value); setCurrentPage(1); }}
-                  className="flex-1 h-9 px-2 text-xs bg-background border border-border rounded-lg text-foreground [color-scheme:light] dark:[color-scheme:dark] focus:outline-none focus:border-primary/50"
+                  className="flex-1 h-9 px-2 text-xs bg-background border border-border rounded-lg text-foreground [color-scheme:dark] focus:outline-none focus:border-primary/50"
                 />
               </div>
             </div>
           </div>
 
-          {/* Clear filters */}
           {activeFilterCount > 0 && (
             <div className="flex justify-end pt-1">
-              <button
-                onClick={clearAllFilters}
-                className="text-xs font-bold text-red-400 hover:text-red-500 transition-colors"
-              >
+              <button onClick={clearAllFilters} className="text-xs font-bold text-red-400 hover:text-red-500 transition-colors">
                 Clear all filters
               </button>
             </div>
@@ -481,14 +468,10 @@ const Tasks = () => {
       {/* ── Pagination ── */}
       {totalPages > 1 && (
         <div className="shrink-0 flex items-center justify-between pt-4 border-t border-border mt-2">
-          {/* Page info */}
           <span className="text-[11px] text-muted-foreground/50 font-medium">
             Page {safePage} of {totalPages} · {filtered.length} total
           </span>
-
-          {/* Page controls */}
           <div className="flex items-center gap-1">
-            {/* Prev */}
             <button
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={safePage === 1}
@@ -496,25 +479,16 @@ const Tasks = () => {
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
-
-            {/* Page number pills */}
             {Array.from({ length: totalPages }, (_, i) => i + 1)
-              .filter((p) => {
-                // Show first, last, current, and neighbours — collapse rest with ellipsis logic
-                return p === 1 || p === totalPages || Math.abs(p - safePage) <= 1;
-              })
+              .filter((p) => p === 1 || p === totalPages || Math.abs(p - safePage) <= 1)
               .reduce<(number | "…")[]>((acc, p, idx, arr) => {
-                if (idx > 0 && typeof arr[idx - 1] === "number" && (p as number) - (arr[idx - 1] as number) > 1) {
-                  acc.push("…");
-                }
+                if (idx > 0 && typeof arr[idx - 1] === "number" && (p as number) - (arr[idx - 1] as number) > 1) acc.push("…");
                 acc.push(p);
                 return acc;
               }, [])
               .map((item, idx) =>
                 item === "…" ? (
-                  <span key={`ellipsis-${idx}`} className="h-8 w-6 flex items-center justify-center text-xs text-muted-foreground/40">
-                    …
-                  </span>
+                  <span key={`ellipsis-${idx}`} className="h-8 w-6 flex items-center justify-center text-xs text-muted-foreground/40">…</span>
                 ) : (
                   <button
                     key={item}
@@ -529,8 +503,6 @@ const Tasks = () => {
                   </button>
                 )
               )}
-
-            {/* Next */}
             <button
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={safePage === totalPages}
@@ -579,13 +551,16 @@ const Tasks = () => {
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* ── FIXED: Due Date with white calendar icon via injected style ── */}
               <div className="space-y-1.5">
                 <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Due Date</Label>
-                <Input
+                <input
                   type="date"
                   value={dueDate}
                   onChange={(e) => setDueDate(e.target.value)}
-                  className="bg-muted border-border text-foreground h-10 [color-scheme:dark]"
+                  style={{ colorScheme: "dark" }}
+                  className="w-full h-10 px-3 rounded-md bg-muted border border-border text-foreground text-sm cursor-pointer focus:outline-none focus:border-primary/50"
                 />
               </div>
             </div>
@@ -623,10 +598,7 @@ const Tasks = () => {
       </Dialog>
 
       {/* ── Delete Confirmation Dialog ── */}
-      <AlertDialog
-        open={!!taskToDelete}
-        onOpenChange={(o) => { if (!o) setTaskToDelete(null); }}
-      >
+      <AlertDialog open={!!taskToDelete} onOpenChange={(o) => { if (!o) setTaskToDelete(null); }}>
         <AlertDialogContent className="card-bg border border-border">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-foreground">Delete task?</AlertDialogTitle>
@@ -652,7 +624,6 @@ const Tasks = () => {
 };
 
 // ─── Task Card ────────────────────────────────────────────────────────────────
-// Note: onDelete renamed to onDeleteRequest — it now opens confirmation instead of deleting directly
 
 function TaskCard({
   task, contacts, onToggle, onDeleteRequest, isCompleted = false,
@@ -673,24 +644,14 @@ function TaskCard({
         due.isOverdue && !isCompleted ? "border-red-500/25" : "border-border"
       } ${isCompleted ? "opacity-55" : ""}`}
     >
-      {/* Toggle */}
-      <button
-        onClick={onToggle}
-        className="mt-0.5 shrink-0 text-muted-foreground hover:text-primary transition-colors"
-      >
-        {isCompleted
-          ? <CheckCircle2 className="h-5 w-5 text-primary" />
-          : <Circle className="h-5 w-5" />
-        }
+      <button onClick={onToggle} className="mt-0.5 shrink-0 text-muted-foreground hover:text-primary transition-colors">
+        {isCompleted ? <CheckCircle2 className="h-5 w-5 text-primary" /> : <Circle className="h-5 w-5" />}
       </button>
-
-      {/* Content */}
       <div className="flex-1 min-w-0">
         <p className={`text-sm font-semibold text-foreground leading-snug ${isCompleted ? "line-through text-muted-foreground" : ""}`}>
           {task.title}
         </p>
         <div className="flex flex-wrap items-center gap-3 mt-2">
-          {/* Priority */}
           <span
             className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${p.bg} ${p.border}`}
             style={{ color: p.color }}
@@ -698,21 +659,16 @@ function TaskCard({
             <Flag className="h-2.5 w-2.5" />
             {p.label}
           </span>
-          {/* Due date */}
           {due.label && (
             <span className={`inline-flex items-center gap-1 text-[10px] font-bold ${
               due.isOverdue && !isCompleted ? "text-red-400"
               : due.isToday && !isCompleted ? "text-amber-400"
               : "text-muted-foreground/50"
             }`}>
-              {due.isOverdue && !isCompleted
-                ? <AlertTriangle className="h-2.5 w-2.5" />
-                : <Clock className="h-2.5 w-2.5" />
-              }
+              {due.isOverdue && !isCompleted ? <AlertTriangle className="h-2.5 w-2.5" /> : <Clock className="h-2.5 w-2.5" />}
               {due.label}
             </span>
           )}
-          {/* Contact */}
           {contact && (
             <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-purple-400">
               <User className="h-2.5 w-2.5" />
@@ -721,8 +677,6 @@ function TaskCard({
           )}
         </div>
       </div>
-
-      {/* Delete — opens confirmation, does NOT delete directly */}
       <button
         onClick={(e) => { e.stopPropagation(); onDeleteRequest(); }}
         className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-red-400 mt-0.5"

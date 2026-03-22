@@ -1,9 +1,10 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import {
   Plus, Mail, MessageSquare, GitBranch, Clock,
   Trash2, ToggleLeft, ToggleRight, Send, ChevronDown, ChevronUp,
   Megaphone, X, ChevronLeft, ChevronRight,
+  Bold, Italic, Underline, Link, Palette,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -58,6 +59,219 @@ type Campaign = {
   is_active: boolean;
   created_at: string;
 };
+
+// ─── Rich Text Editor ─────────────────────────────────────────────────────────
+
+const TEXT_COLORS = [
+  { label: "White",   value: "#ffffff" },
+  { label: "Red",     value: "#f87171" },
+  { label: "Green",   value: "#4ade80" },
+  { label: "Blue",    value: "#60a5fa" },
+  { label: "Yellow",  value: "#facc15" },
+  { label: "Purple",  value: "#c084fc" },
+  { label: "Orange",  value: "#fb923c" },
+];
+
+function RichTextEditor({
+  value,
+  onChange,
+  placeholder,
+  rows = 5,
+}: {
+  value: string;
+  onChange: (html: string) => void;
+  placeholder?: string;
+  rows?: number;
+}) {
+  const editorRef   = useRef<HTMLDivElement>(null);
+  const [showColors, setShowColors] = useState(false);
+  const [showLink, setShowLink]     = useState(false);
+  const [linkUrl, setLinkUrl]       = useState("");
+  const savedRange  = useRef<Range | null>(null);
+  const isInternal  = useRef(false);
+
+  // Sync external value into editor only when it differs (e.g. form reset)
+  useEffect(() => {
+    if (!editorRef.current) return;
+    if (editorRef.current.innerHTML !== value) {
+      isInternal.current = false;
+      editorRef.current.innerHTML = value;
+    }
+  }, [value]);
+
+  const saveSelection = () => {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+      savedRange.current = sel.getRangeAt(0).cloneRange();
+    }
+  };
+
+  const restoreSelection = () => {
+    if (!savedRange.current) return;
+    const sel = window.getSelection();
+    if (sel) {
+      sel.removeAllRanges();
+      sel.addRange(savedRange.current);
+    }
+  };
+
+  const exec = (command: string, value?: string) => {
+    editorRef.current?.focus();
+    document.execCommand(command, false, value);
+    isInternal.current = true;
+    onChange(editorRef.current?.innerHTML || "");
+  };
+
+  const handleInput = () => {
+    isInternal.current = true;
+    onChange(editorRef.current?.innerHTML || "");
+  };
+
+  const handleLink = () => {
+    restoreSelection();
+    if (linkUrl.trim()) {
+      exec("createLink", linkUrl.trim());
+    }
+    setShowLink(false);
+    setLinkUrl("");
+  };
+
+  const minHeight = `${rows * 1.75}rem`;
+
+  return (
+    <div className="rounded-xl border border-border overflow-hidden focus-within:border-primary/50 transition-colors">
+      {/* Toolbar */}
+      <div className="flex items-center gap-1 px-2 py-1.5 border-b border-border bg-background/80 flex-wrap">
+
+        {/* Bold */}
+        <button
+          type="button"
+          onMouseDown={(e) => { e.preventDefault(); exec("bold"); }}
+          className="h-7 w-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all"
+          title="Bold"
+        >
+          <Bold className="h-3.5 w-3.5" />
+        </button>
+
+        {/* Italic */}
+        <button
+          type="button"
+          onMouseDown={(e) => { e.preventDefault(); exec("italic"); }}
+          className="h-7 w-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all"
+          title="Italic"
+        >
+          <Italic className="h-3.5 w-3.5" />
+        </button>
+
+        {/* Underline */}
+        <button
+          type="button"
+          onMouseDown={(e) => { e.preventDefault(); exec("underline"); }}
+          className="h-7 w-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all"
+          title="Underline"
+        >
+          <Underline className="h-3.5 w-3.5" />
+        </button>
+
+        <div className="w-px h-4 bg-border mx-1" />
+
+        {/* Text color */}
+        <div className="relative">
+          <button
+            type="button"
+            onMouseDown={(e) => { e.preventDefault(); saveSelection(); setShowColors((v) => !v); setShowLink(false); }}
+            className="h-7 w-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all"
+            title="Text Color"
+          >
+            <Palette className="h-3.5 w-3.5" />
+          </button>
+          {showColors && (
+            <div className="absolute top-8 left-0 z-[99999] bg-popover border border-border rounded-xl p-2 shadow-xl flex flex-wrap gap-1.5 w-40">
+              {TEXT_COLORS.map((c) => (
+                <button
+                  key={c.value}
+                  type="button"
+                  title={c.label}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    restoreSelection();
+                    exec("foreColor", c.value);
+                    setShowColors(false);
+                  }}
+                  className="h-6 w-6 rounded-full border-2 border-border hover:scale-110 transition-transform"
+                  style={{ backgroundColor: c.value }}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Link */}
+        <div className="relative">
+          <button
+            type="button"
+            onMouseDown={(e) => { e.preventDefault(); saveSelection(); setShowLink((v) => !v); setShowColors(false); }}
+            className="h-7 w-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all"
+            title="Insert Link"
+          >
+            <Link className="h-3.5 w-3.5" />
+          </button>
+          {showLink && (
+            <div className="absolute top-8 left-0 z-[99999] bg-popover border border-border rounded-xl p-2 shadow-xl w-56 space-y-2">
+              <input
+                autoFocus
+                placeholder="https://example.com"
+                value={linkUrl}
+                onChange={(e) => setLinkUrl(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleLink()}
+                className="w-full text-xs bg-background border border-border rounded-lg px-2 py-1.5 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/50"
+              />
+              <div className="flex gap-1.5">
+                <button
+                  type="button"
+                  onMouseDown={(e) => { e.preventDefault(); handleLink(); }}
+                  className="flex-1 text-xs font-bold bg-primary text-white rounded-lg py-1 hover:bg-primary/90 transition-colors"
+                >
+                  Insert
+                </button>
+                <button
+                  type="button"
+                  onMouseDown={(e) => { e.preventDefault(); setShowLink(false); setLinkUrl(""); }}
+                  className="flex-1 text-xs font-bold border border-border rounded-lg py-1 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Remove formatting */}
+        <div className="w-px h-4 bg-border mx-1" />
+        <button
+          type="button"
+          onMouseDown={(e) => { e.preventDefault(); exec("removeFormat"); }}
+          className="h-7 px-2 flex items-center justify-center rounded-md text-[10px] font-bold text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all"
+          title="Clear Formatting"
+        >
+          Clear
+        </button>
+      </div>
+
+      {/* Editable area */}
+      <div
+        ref={editorRef}
+        contentEditable
+        suppressContentEditableWarning
+        onInput={handleInput}
+        onBlur={() => { setShowColors(false); }}
+        data-placeholder={placeholder}
+        style={{ minHeight }}
+        className="w-full bg-background/50 text-foreground text-sm px-3 py-2.5 focus:outline-none leading-relaxed [&[data-placeholder]:empty:before]:content-[attr(data-placeholder)] [&[data-placeholder]:empty:before]:text-muted-foreground/40 [&[data-placeholder]:empty:before]:pointer-events-none"
+      />
+    </div>
+  );
+}
 
 // ─── Campaign Card ────────────────────────────────────────────────────────────
 
@@ -138,14 +352,20 @@ function CampaignCard({
                 <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Email</span>
               </div>
               <p className="text-xs font-bold text-foreground">Subject: {campaign.email_subject}</p>
-              <p className="text-[11px] text-muted-foreground/70 leading-relaxed line-clamp-3">{campaign.email_body}</p>
+              <div
+                className="text-[11px] text-muted-foreground/70 leading-relaxed line-clamp-3"
+                dangerouslySetInnerHTML={{ __html: campaign.email_body }}
+              />
             </div>
             <div className="rounded-xl border border-border bg-background/50 p-3 space-y-1.5">
               <div className="flex items-center gap-1.5">
                 <MessageSquare className="h-3.5 w-3.5 text-emerald-400" />
                 <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">WhatsApp</span>
               </div>
-              <p className="text-[11px] text-muted-foreground/70 leading-relaxed line-clamp-4 whitespace-pre-line">{campaign.whatsapp_message}</p>
+              <div
+                className="text-[11px] text-muted-foreground/70 leading-relaxed line-clamp-4"
+                dangerouslySetInnerHTML={{ __html: campaign.whatsapp_message }}
+              />
             </div>
           </div>
           <div className="flex items-start gap-2 p-2.5 rounded-lg bg-primary/5 border border-primary/15">
@@ -163,7 +383,7 @@ function CampaignCard({
 
 const Campaigns = () => {
   const [createOpen, setCreateOpen]             = useState(false);
-  const modalOpenRef = useRef(false); // tracks open state without re-render risk
+  const modalOpenRef = useRef(false);
   const [campaignToDelete, setCampaignToDelete] = useState<Campaign | null>(null);
   const [expandedId, setExpandedId]             = useState<string | null>(null);
   const [form, setForm]                         = useState(emptyForm);
@@ -172,21 +392,14 @@ const Campaigns = () => {
 
   const queryClient = useQueryClient();
 
-  // ── Keep ref in sync with state ──────────────────────────────────────────
   useEffect(() => {
     modalOpenRef.current = createOpen;
     document.body.style.overflow = createOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
   }, [createOpen]);
 
-  // ── Global handler — prevent ANY event from closing modal ────────────────
   useEffect(() => {
-    const noop = (e: Event) => {
-      if (modalOpenRef.current) {
-        e.stopImmediatePropagation();
-      }
-    };
-    // Capture phase — runs before any library handlers
+    const noop = (e: Event) => { if (modalOpenRef.current) e.stopImmediatePropagation(); };
     document.addEventListener("visibilitychange", noop, true);
     document.addEventListener("focusout", noop, true);
     window.addEventListener("blur", noop, true);
@@ -197,7 +410,7 @@ const Campaigns = () => {
       window.removeEventListener("blur", noop, true);
       window.removeEventListener("pagehide", noop, true);
     };
-  }, []); // runs once on mount
+  }, []);
 
   // ── Queries ────────────────────────────────────────────────────────────────
 
@@ -222,14 +435,14 @@ const Campaigns = () => {
       if (form.trigger_type === "stage" && !form.stage) throw new Error("Please select a stage");
       if (form.trigger_type === "time" && (!form.days_after || form.days_after < 1)) throw new Error("Please enter valid number of days");
       const { error } = await supabase.from("campaigns").insert({
-        name:              form.name.trim(),
-        trigger_type:      form.trigger_type,
-        stage:             form.trigger_type === "stage" ? form.stage : null,
-        days_after:        form.trigger_type === "time" ? form.days_after : null,
-        email_subject:     form.email_subject.trim(),
-        email_body:        form.email_body.trim(),
-        whatsapp_message:  form.whatsapp_message.trim(),
-        is_active:         true,
+        name:             form.name.trim(),
+        trigger_type:     form.trigger_type,
+        stage:            form.trigger_type === "stage" ? form.stage : null,
+        days_after:       form.trigger_type === "time" ? form.days_after : null,
+        email_subject:    form.email_subject.trim(),
+        email_body:       form.email_body.trim(),
+        whatsapp_message: form.whatsapp_message.trim(),
+        is_active:        true,
       });
       if (error) throw error;
     },
@@ -285,8 +498,6 @@ const Campaigns = () => {
     setFilterType(f);
     setCurrentPage(1);
   };
-
-  // ── Field style helpers ────────────────────────────────────────────────────
 
   const fieldLabel = "text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1.5 block";
   const fieldInput = "w-full bg-background/50 border-border text-foreground text-sm";
@@ -417,7 +628,7 @@ const Campaigns = () => {
         </div>
       </div>
 
-      {/* ── Custom Modal — always mounted, visibility controlled by CSS not JS ── */}
+      {/* ── Custom Modal ── */}
       {createPortal(
         <div
           className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
@@ -524,7 +735,7 @@ const Campaigns = () => {
 
               <div className="border-t border-border" />
 
-              {/* Email */}
+              {/* ── Email with Rich Text Editor ── */}
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <Mail className="h-4 w-4 text-primary" />
@@ -541,17 +752,16 @@ const Campaigns = () => {
                 </div>
                 <div>
                   <label className={fieldLabel}>Body *</label>
-                  <textarea
-                    rows={5}
-                    className="w-full bg-background/50 border border-border rounded-xl px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/50 resize-none"
-                    placeholder={`Hi {{contact_name}},\n\nThank you for your interest...\n\nBest regards,\n{{assignee_name}}`}
+                  <RichTextEditor
                     value={form.email_body}
-                    onChange={(e) => setForm({ ...form, email_body: e.target.value })}
+                    onChange={(html) => setForm((f) => ({ ...f, email_body: html }))}
+                    placeholder={`Hi {{contact_name}},\n\nThank you for your interest...\n\nBest regards,\n{{assignee_name}}`}
+                    rows={5}
                   />
                 </div>
               </div>
 
-              {/* WhatsApp */}
+              {/* ── WhatsApp with Rich Text Editor ── */}
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <MessageSquare className="h-4 w-4 text-emerald-400" />
@@ -559,12 +769,11 @@ const Campaigns = () => {
                 </div>
                 <div>
                   <label className={fieldLabel}>Message *</label>
-                  <textarea
-                    rows={4}
-                    className="w-full bg-background/50 border border-border rounded-xl px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/50 resize-none"
-                    placeholder={`Hi {{contact_name}} 👋\n\nWe are excited to move forward with you...\n\n- {{assignee_name}}`}
+                  <RichTextEditor
                     value={form.whatsapp_message}
-                    onChange={(e) => setForm({ ...form, whatsapp_message: e.target.value })}
+                    onChange={(html) => setForm((f) => ({ ...f, whatsapp_message: html }))}
+                    placeholder={`Hi {{contact_name}} 👋\n\nWe are excited to move forward...\n\n- {{assignee_name}}`}
+                    rows={4}
                   />
                 </div>
               </div>

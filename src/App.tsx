@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes, Navigate, Outlet } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate, Outlet, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -22,11 +22,23 @@ import Appointments from "./pages/Appointments";
 
 const queryClient = new QueryClient();
 
-// ─── Role Guard ───────────────────────────────────────────────────────────────
-// Wraps any route that should only be accessible by specific roles.
-// If the user's role is not in `allowedRoles`, redirect to "/" instead.
-// Shows nothing while role is still loading to prevent content flash.
+// ─── Check recovery URL before anything renders ───────────────────────────────
+function isRecoveryUrl(): boolean {
+  const hash = window.location.hash || "";
+  const params = new URLSearchParams(hash.replace("#", ""));
+  if (params.get("type") === "recovery") return true;
+  if (params.get("error") === "access_denied") return true;
+  if (params.get("error_code") === "otp_expired") return true;
+  const search = window.location.search || "";
+  const searchParams = new URLSearchParams(search);
+  if (searchParams.get("type") === "recovery") return true;
+  return false;
+}
 
+// Evaluated ONCE at module load time — before React, before BrowserRouter
+const INITIAL_IS_RECOVERY = isRecoveryUrl();
+
+// ─── Role Guard ───────────────────────────────────────────────────────────────
 function RoleGuard({
   allowedRoles,
   userRole,
@@ -36,47 +48,126 @@ function RoleGuard({
   userRole: string | null;
   roleLoading: boolean;
 }) {
-  // While fetching role from Supabase, render nothing (prevents flash)
   if (roleLoading) return null;
-
-  // Role loaded — check permission
   if (!userRole || !allowedRoles.includes(userRole)) {
     return <Navigate to="/" replace />;
   }
-
   return <Outlet />;
 }
 
-// ─── App ──────────────────────────────────────────────────────────────────────
+// ─── Save intended URL then redirect to login ─────────────────────────────────
+function SaveAndRedirect() {
+  const location = useLocation();
+  useEffect(() => {
+    const path = location.pathname;
+    if (path !== "/auth" && path !== "/") {
+      sessionStorage.setItem("intended_url", path);
+    }
+  }, [location]);
+  return <Navigate to="/auth" replace />;
+}
+
+// ─── Inner router component ───────────────────────────────────────────────────
+function AppRoutes({ session, loading, userRole, roleLoading, isRecovery }: {
+  session: any;
+  loading: boolean;
+  userRole: string | null;
+  roleLoading: boolean;
+  isRecovery: boolean;
+}) {
+  // ── FIXED: wait for BOTH loading AND roleLoading before rendering routes ──
+  // Previously only checked `loading`, so routes rendered while roleLoading
+  // was still true — causing RoleGuard to return null and hit the 404 page
+  const isFullyReady = !loading && !roleLoading;
+
+  if (!isFullyReady && !isRecovery) {
+    return (
+      <div className="h-screen w-screen bg-background flex items-center justify-center text-foreground font-sans">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-muted-foreground font-medium">Loading Atomise CRM...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <Routes>
+      {isRecovery ? (
+        <Route path="*" element={<Auth />} />
+      ) : !session ? (
+        <>
+          <Route path="/auth" element={<Auth />} />
+          <Route path="*" element={<SaveAndRedirect />} />
+        </>
+      ) : (
+        <Route element={<AppLayout userRole={userRole} children={<Outlet />} />}>
+          <Route path="/"             element={<Dashboard />} />
+          <Route path="/contacts"     element={<Contacts />} />
+          <Route path="/tasks"        element={<Tasks />} />
+          <Route path="/appointments" element={<Appointments />} />
+          <Route path="/onboarding"   element={<Onboarding />} />
+          <Route element={
+            <RoleGuard
+              allowedRoles={["admin"]}
+              userRole={userRole}
+              roleLoading={roleLoading}
+            />
+          }>
+            <Route path="/pipeline"  element={<Pipeline />} />
+            <Route path="/settings"  element={<Settings />} />
+            <Route path="/campaigns" element={<Campaigns />} />
+          </Route>
+          <Route path="*" element={<NotFound />} />
+        </Route>
+      )}
+    </Routes>
+  );
+}
 
 const App = () => {
-  const [session, setSession]       = useState<any>(null);
-  const [loading, setLoading]       = useState(true);
-  const [userRole, setUserRole]     = useState<string | null>(null);
+  const [session, setSession]         = useState<any>(null);
+  const [loading, setLoading]         = useState(true);
+  const [userRole, setUserRole]       = useState<string | null>(null);
   const [roleLoading, setRoleLoading] = useState(true);
-  const [isRecovery, setIsRecovery] = useState(false);
+  const [isRecovery, setIsRecovery]   = useState(INITIAL_IS_RECOVERY);
 
   // ── Auth session listener ──────────────────────────────────────────────────
   useEffect(() => {
-    // Detect password recovery link FIRST before any session redirect
-    const hash = window.location.hash;
-    if (hash && (hash.includes("type=recovery") || hash.includes("error=access_denied") || hash.includes("error_code=otp_expired"))) {
-      setIsRecovery(true);
+    // During recovery, skip getSession — let onAuthStateChange handle it
+    if (INITIAL_IS_RECOVERY) {
+      setLoading(false);
+    } else {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        setSession(session);
+        setLoading(false);
+      });
     }
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setLoading(false);
-    });
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      // PASSWORD_RECOVERY event — always show reset screen
       if (_event === "PASSWORD_RECOVERY") {
         setIsRecovery(true);
+        setSession(session);
+        setRoleLoading(false);
         setLoading(false);
         return;
       }
+
+      // SIGNED_IN fires when recovery link access_token is consumed by Supabase
+      // If we started as a recovery URL, treat this SIGNED_IN as recovery too
+      if (_event === "SIGNED_IN" && INITIAL_IS_RECOVERY) {
+        setIsRecovery(true);
+        setSession(session);
+        setRoleLoading(false);
+        setLoading(false);
+        return;
+      }
+
+      // Normal auth flow
       setSession(session);
       setLoading(false);
+
       if (!session) {
         setUserRole(null);
         setRoleLoading(false);
@@ -95,6 +186,11 @@ const App = () => {
       setRoleLoading(false);
       return;
     }
+    // Skip role fetch during recovery flow
+    if (isRecovery) {
+      setRoleLoading(false);
+      return;
+    }
     const fetchRole = async () => {
       setRoleLoading(true);
       const { data } = await supabase
@@ -102,27 +198,11 @@ const App = () => {
         .select("role")
         .eq("id", session.user.id)
         .single();
-      setUserRole(data?.role || "sales"); // default to sales (least privilege)
+      setUserRole(data?.role || "sales");
       setRoleLoading(false);
     };
     fetchRole();
-  }, [session]);
-
-  // ── Loading screen ─────────────────────────────────────────────────────────
-  // Show spinner while:
-  // 1. Initial auth session is being checked (loading)
-  // 2. Session exists but role is still being fetched (roleLoading)
-  // This prevents the brief 404 flash between login and dashboard render
-  if (loading || (session && roleLoading) || (isRecovery && loading)) {
-    return (
-      <div className="h-screen w-screen bg-background flex items-center justify-center text-foreground font-sans">
-        <div className="flex flex-col items-center gap-4">
-          <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-muted-foreground font-medium">Loading Atomise CRM...</p>
-        </div>
-      </div>
-    );
-  }
+  }, [session, isRecovery]);
 
   return (
     <ThemeProvider defaultTheme="dark" storageKey="atomise-ui-theme">
@@ -131,46 +211,13 @@ const App = () => {
           <Toaster />
           <Sonner />
           <BrowserRouter>
-            <Routes>
-              {isRecovery ? (
-                // ── PASSWORD RECOVERY: always show Auth page ───────────────
-                <>
-                  <Route path="*" element={<Auth />} />
-                </>
-              ) : !session ? (
-                // ── PUBLIC: unauthenticated users ──────────────────────────
-                <>
-                  <Route path="/auth" element={<Auth />} />
-                  <Route path="*" element={<Navigate to="/auth" replace />} />
-                </>
-              ) : (
-                // ── PROTECTED: authenticated users inside AppLayout ─────────
-                <Route element={<AppLayout userRole={userRole} children={<Outlet />} />}>
-
-                  {/* ── Accessible by ALL roles ── */}
-                  <Route path="/"             element={<Dashboard />} />
-                  <Route path="/contacts"     element={<Contacts />} />
-                  <Route path="/tasks"        element={<Tasks />} />
-                  <Route path="/appointments" element={<Appointments />} />
-                  <Route path="/onboarding"   element={<Onboarding />} />
-
-                  {/* ── Admin only routes ── */}
-                  <Route element={
-                    <RoleGuard
-                      allowedRoles={["admin"]}
-                      userRole={userRole}
-                      roleLoading={roleLoading}
-                    />
-                  }>
-                    <Route path="/pipeline"  element={<Pipeline />} />
-                    <Route path="/settings"  element={<Settings />} />
-                    <Route path="/campaigns" element={<Campaigns />} />
-                  </Route>
-
-                  <Route path="*" element={<NotFound />} />
-                </Route>
-              )}
-            </Routes>
+            <AppRoutes
+              session={session}
+              loading={loading}
+              userRole={userRole}
+              roleLoading={roleLoading}
+              isRecovery={isRecovery}
+            />
           </BrowserRouter>
         </TooltipProvider>
       </QueryClientProvider>

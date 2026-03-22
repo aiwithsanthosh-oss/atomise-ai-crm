@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -89,6 +89,8 @@ const Settings = () => {
   const { toast }  = useToast();
   const { theme, setTheme } = useTheme();
   const queryClient = useQueryClient();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const passwordInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -179,7 +181,7 @@ const Settings = () => {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="h-full w-full overflow-y-auto page-bg">
+      <div ref={scrollRef} className="h-full w-full overflow-y-auto page-bg">
       <div className="max-w-3xl mx-auto px-6 pt-5 pb-10 space-y-6">
 
         {/* Header */}
@@ -420,13 +422,26 @@ const Settings = () => {
             <div className="space-y-1.5">
               <Label htmlFor="new-password" className="text-sm font-semibold text-foreground">New Password</Label>
               <div className="relative">
-                <Input
-                  id="new-password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Enter new password"
-                  value={newPassword}
-                  onChange={(e) => { setNewPassword(e.target.value); setPasswordError(null); }}
-                  className={`bg-background/50 pr-10 ${passwordError ? "border-red-500" : ""}`}
+              <Input
+                id="new-password"
+                ref={passwordInputRef}
+                type={showPassword ? "text" : "password"}
+                placeholder="Enter new password"
+                value={newPassword}
+                onChange={(e) => {
+             const scrollTop = scrollRef.current?.scrollTop ?? 0;
+             const cursorPos = e.target.selectionStart;
+            setNewPassword(e.target.value);
+            setPasswordError(null);
+            requestAnimationFrame(() => {
+             if (scrollRef.current) scrollRef.current.scrollTop = scrollTop;
+             if (passwordInputRef.current) {
+              passwordInputRef.current.focus();
+              passwordInputRef.current.setSelectionRange(cursorPos, cursorPos);
+              }
+            });
+          }}
+                 className={`bg-background/50 pr-10 ${passwordError ? "border-red-500" : ""}`}
                 />
                 <button
                   type="button"

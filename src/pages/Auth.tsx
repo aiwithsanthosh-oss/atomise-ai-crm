@@ -79,6 +79,9 @@ export default function Auth() {
     password?: string;
   }>({});
 
+  // ── NEW: track reset email sent state ─────────────────────────────────────
+  const [resetEmailSent, setResetEmailSent] = useState(false);
+
   const { toast } = useToast();
   const navigate  = useNavigate();
 
@@ -124,6 +127,7 @@ export default function Auth() {
     setShowPassword(false);
     setPasswordError(null);
     setFieldErrors({});
+    setResetEmailSent(false); // ── NEW: reset the sent state when switching views
     setView(newView);
   };
 
@@ -236,26 +240,37 @@ export default function Auth() {
     setLoading(false);
   };
 
-  // ── Forgot password — email validation before sending reset link ──────────
+  // ── Forgot password — FIXED: proper validation + inline success state ─────
   const handleResetRequest = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Step 1: Client-side format validation
     const errors: typeof fieldErrors = {};
     if (!email.trim())
       errors.email = "Email address is required";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))
       errors.email = "Enter a valid email address";
     if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
+
     setFieldErrors({});
     setLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
       redirectTo: window.location.origin + "/auth",
     });
-    if (error) toast({ variant: "destructive", title: "Request Failed", description: error.message });
-    else {
-      toast({ title: "Link Sent!", description: "Check your inbox for the password reset link." });
-      handleViewChange("login");
-    }
+
     setLoading(false);
+
+    if (error) {
+      // Step 2: Show Supabase errors inline (e.g. rate limit exceeded)
+      setFieldErrors({ email: error.message });
+      return;
+    }
+
+    // Step 3: Show inline success — do NOT navigate away
+    // Supabase always returns success even for unregistered emails (security by design)
+    // So we show a message that covers both cases clearly
+    setResetEmailSent(true);
   };
 
   // ─── Shared input style ───────────────────────────────────────────────────
@@ -415,33 +430,70 @@ export default function Auth() {
                 <h2 className="text-2xl font-bold tracking-tight text-white font-display">Reset Password</h2>
                 <p className="text-sm text-muted-foreground">Enter your email and we'll send a reset link.</p>
               </div>
-              <div className="bg-primary/10 border border-primary/20 rounded-xl p-4">
-                <p className="text-xs text-primary/80 font-medium leading-relaxed">
-                  Your new password must contain: at least <strong>6 characters</strong>, <strong>1 uppercase letter</strong>, <strong>1 number</strong>, and <strong>1 special character</strong>.
-                </p>
-              </div>
-              <form onSubmit={handleResetRequest} className="space-y-4">
-                <div className="space-y-1">
-                  <Label>Email Address</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      type="email"
-                      placeholder="name@example.com"
-                      value={email}
-                      onChange={(e) => { setEmail(e.target.value); setFieldErrors((p) => ({ ...p, email: undefined })); }}
-                      className={`${inputCls} pl-10 ${fieldErrors.email ? "border-red-500" : ""}`}
-                    />
+
+              {/* ── FIXED: Show success state inline instead of navigating away ── */}
+              {resetEmailSent ? (
+                <div className="space-y-4">
+                  <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center space-y-2">
+                    <CheckCircle2 className="h-8 w-8 text-emerald-500 mx-auto" />
+                    <p className="text-sm text-emerald-400 font-semibold">Check your inbox!</p>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      If <span className="text-white font-medium">{email}</span> is registered, a reset link has been sent. Check your inbox and spam folder.
+                    </p>
+                    <p className="text-xs text-muted-foreground/60">
+                      Didn't receive it? Make sure the email is registered in the system.
+                    </p>
                   </div>
-                  {fieldErrors.email && <p className="text-xs text-red-400 font-medium">{fieldErrors.email}</p>}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setResetEmailSent(false)}
+                    className="w-full h-11 font-bold rounded-xl"
+                  >
+                    Try a Different Email
+                  </Button>
+                  <button
+                    type="button"
+                    onClick={() => handleViewChange("login")}
+                    className="flex items-center justify-center w-full gap-2 text-sm text-muted-foreground hover:text-primary pt-2"
+                  >
+                    <ArrowLeft className="h-4 w-4" /> Back to Login
+                  </button>
                 </div>
-                <Button type="submit" className="w-full h-11 font-bold shadow-lg rounded-xl" disabled={loading}>
-                  {loading ? "Sending..." : "Send Reset Link"}
-                </Button>
-                <button type="button" onClick={() => handleViewChange("login")} className="flex items-center justify-center w-full gap-2 text-sm text-muted-foreground hover:text-primary pt-2">
-                  <ArrowLeft className="h-4 w-4" /> Back to Login
-                </button>
-              </form>
+              ) : (
+                <>
+                  <div className="bg-primary/10 border border-primary/20 rounded-xl p-4">
+                    <p className="text-xs text-primary/80 font-medium leading-relaxed">
+                      Your new password must contain: at least <strong>6 characters</strong>, <strong>1 uppercase letter</strong>, <strong>1 number</strong>, and <strong>1 special character</strong>.
+                    </p>
+                  </div>
+                  <form onSubmit={handleResetRequest} className="space-y-4">
+                    <div className="space-y-1">
+                      <Label>Email Address</Label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          type="email"
+                          placeholder="name@example.com"
+                          value={email}
+                          onChange={(e) => { setEmail(e.target.value); setFieldErrors((p) => ({ ...p, email: undefined })); }}
+                          className={`${inputCls} pl-10 ${fieldErrors.email ? "border-red-500" : ""}`}
+                        />
+                      </div>
+                      {/* ── FIXED: inline error shown directly under input ── */}
+                      {fieldErrors.email && (
+                        <p className="text-xs text-red-400 font-medium">{fieldErrors.email}</p>
+                      )}
+                    </div>
+                    <Button type="submit" className="w-full h-11 font-bold shadow-lg rounded-xl" disabled={loading}>
+                      {loading ? "Sending..." : "Send Reset Link"}
+                    </Button>
+                    <button type="button" onClick={() => handleViewChange("login")} className="flex items-center justify-center w-full gap-2 text-sm text-muted-foreground hover:text-primary pt-2">
+                      <ArrowLeft className="h-4 w-4" /> Back to Login
+                    </button>
+                  </form>
+                </>
+              )}
             </motion.div>
           )}
 

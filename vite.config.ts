@@ -13,6 +13,19 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  // This ensures environment variables are loaded correctly
-  envDir: "./", 
+  envDir: "./",
+  build: {
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor:   ["react", "react-dom", "react-router-dom"],
+          supabase: ["@supabase/supabase-js"],
+          query:    ["@tanstack/react-query"],
+          ui:       ["framer-motion", "date-fns"],
+          charts:   ["recharts"],
+        },
+      },
+    },
+  },
 });
