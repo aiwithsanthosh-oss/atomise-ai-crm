@@ -9,42 +9,42 @@ import {
 
 // ─── Country codes list ────────────────────────────────────────────────────────
 export const COUNTRY_CODES = [
-  { code: "+91",  country: "India",          flag: "🇮🇳" },
-  { code: "+60",  country: "Malaysia",       flag: "🇲🇾" },
-  { code: "+1",   country: "USA / Canada",   flag: "🇺🇸" },
-  { code: "+44",  country: "UK",             flag: "🇬🇧" },
-  { code: "+61",  country: "Australia",      flag: "🇦🇺" },
-  { code: "+65",  country: "Singapore",      flag: "🇸🇬" },
-  { code: "+971", country: "UAE",            flag: "🇦🇪" },
-  { code: "+966", country: "Saudi Arabia",   flag: "🇸🇦" },
-  { code: "+974", country: "Qatar",          flag: "🇶🇦" },
-  { code: "+973", country: "Bahrain",        flag: "🇧🇭" },
-  { code: "+968", country: "Oman",           flag: "🇴🇲" },
-  { code: "+962", country: "Jordan",         flag: "🇯🇴" },
-  { code: "+20",  country: "Egypt",          flag: "🇪🇬" },
-  { code: "+27",  country: "South Africa",   flag: "🇿🇦" },
-  { code: "+234", country: "Nigeria",        flag: "🇳🇬" },
-  { code: "+254", country: "Kenya",          flag: "🇰🇪" },
-  { code: "+49",  country: "Germany",        flag: "🇩🇪" },
-  { code: "+33",  country: "France",         flag: "🇫🇷" },
-  { code: "+39",  country: "Italy",          flag: "🇮🇹" },
-  { code: "+34",  country: "Spain",          flag: "🇪🇸" },
-  { code: "+31",  country: "Netherlands",    flag: "🇳🇱" },
-  { code: "+7",   country: "Russia",         flag: "🇷🇺" },
-  { code: "+86",  country: "China",          flag: "🇨🇳" },
-  { code: "+81",  country: "Japan",          flag: "🇯🇵" },
-  { code: "+82",  country: "South Korea",    flag: "🇰🇷" },
-  { code: "+63",  country: "Philippines",    flag: "🇵🇭" },
-  { code: "+62",  country: "Indonesia",      flag: "🇮🇩" },
-  { code: "+66",  country: "Thailand",       flag: "🇹🇭" },
-  { code: "+84",  country: "Vietnam",        flag: "🇻🇳" },
-  { code: "+880", country: "Bangladesh",     flag: "🇧🇩" },
-  { code: "+94",  country: "Sri Lanka",      flag: "🇱🇰" },
-  { code: "+977", country: "Nepal",          flag: "🇳🇵" },
-  { code: "+92",  country: "Pakistan",       flag: "🇵🇰" },
-  { code: "+55",  country: "Brazil",         flag: "🇧🇷" },
-  { code: "+52",  country: "Mexico",         flag: "🇲🇽" },
-  { code: "+54",  country: "Argentina",      flag: "🇦🇷" },
+  { code: "+91",  country: "India",          iso: "IN" },
+  { code: "+60",  country: "Malaysia",       iso: "MY" },
+  { code: "+1",   country: "USA / Canada",   iso: "US" },
+  { code: "+44",  country: "UK",             iso: "GB" },
+  { code: "+61",  country: "Australia",      iso: "AU" },
+  { code: "+65",  country: "Singapore",      iso: "SG" },
+  { code: "+971", country: "UAE",            iso: "AE" },
+  { code: "+966", country: "Saudi Arabia",   iso: "SA" },
+  { code: "+974", country: "Qatar",          iso: "QA" },
+  { code: "+973", country: "Bahrain",        iso: "BH" },
+  { code: "+968", country: "Oman",           iso: "OM" },
+  { code: "+962", country: "Jordan",         iso: "JO" },
+  { code: "+20",  country: "Egypt",          iso: "EG" },
+  { code: "+27",  country: "South Africa",   iso: "ZA" },
+  { code: "+234", country: "Nigeria",        iso: "NG" },
+  { code: "+254", country: "Kenya",          iso: "KE" },
+  { code: "+49",  country: "Germany",        iso: "DE" },
+  { code: "+33",  country: "France",         iso: "FR" },
+  { code: "+39",  country: "Italy",          iso: "IT" },
+  { code: "+34",  country: "Spain",          iso: "ES" },
+  { code: "+31",  country: "Netherlands",    iso: "NL" },
+  { code: "+7",   country: "Russia",         iso: "RU" },
+  { code: "+86",  country: "China",          iso: "CN" },
+  { code: "+81",  country: "Japan",          iso: "JP" },
+  { code: "+82",  country: "South Korea",    iso: "KR" },
+  { code: "+63",  country: "Philippines",    iso: "PH" },
+  { code: "+62",  country: "Indonesia",      iso: "ID" },
+  { code: "+66",  country: "Thailand",       iso: "TH" },
+  { code: "+84",  country: "Vietnam",        iso: "VN" },
+  { code: "+880", country: "Bangladesh",     iso: "BD" },
+  { code: "+94",  country: "Sri Lanka",      iso: "LK" },
+  { code: "+977", country: "Nepal",          iso: "NP" },
+  { code: "+92",  country: "Pakistan",       iso: "PK" },
+  { code: "+55",  country: "Brazil",         iso: "BR" },
+  { code: "+52",  country: "Mexico",         iso: "MX" },
+  { code: "+54",  country: "Argentina",      iso: "AR" },
 ];
 
 // ─── Helper to split a stored full number ─────────────────────────────────────
@@ -106,9 +106,11 @@ export function PhoneInput({
           <Select value={countryCode} onValueChange={onCountryCodeChange}>
             <SelectTrigger className={`${triggerBase} ${codeError ? "border-red-500" : ""}`}>
               <SelectValue>
-                <span className="flex items-center gap-1 text-sm">
-                  <span>{COUNTRY_CODES.find((c) => c.code === countryCode)?.flag}</span>
-                  <span className="font-bold text-xs">{countryCode}</span>
+                <span className="flex items-center gap-1 text-xs">
+                  <span className="font-black text-primary/80 bg-primary/10 px-1 py-0.5 rounded text-[10px]">
+                    {COUNTRY_CODES.find((c) => c.code === countryCode)?.iso}
+                  </span>
+                  <span className="font-bold">{countryCode}</span>
                 </span>
               </SelectValue>
             </SelectTrigger>
@@ -119,8 +121,8 @@ export function PhoneInput({
               {COUNTRY_CODES.map((c) => (
                 <SelectItem key={c.code + c.country} value={c.code} className="text-sm">
                   <span className="flex items-center gap-2">
-                    <span>{c.flag}</span>
-                    <span className="font-bold text-primary">{c.code}</span>
+                    <span className="font-black text-primary/80 bg-primary/10 px-1.5 py-0.5 rounded text-[10px] shrink-0 w-8 text-center">{c.iso}</span>
+                    <span className="font-bold text-primary shrink-0">{c.code}</span>
                     <span className="text-muted-foreground/70 text-xs">{c.country}</span>
                   </span>
                 </SelectItem>

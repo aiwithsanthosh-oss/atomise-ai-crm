@@ -489,7 +489,7 @@ export default function Contacts() {
                 </Button>
               </DialogTrigger>
               {/* ── CREATE LEAD DIALOG ── */}
-              <DialogContent className="max-w-lg flex flex-col p-0 border border-border rounded-2xl overflow-hidden card-bg gap-0" onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
+              <DialogContent className="max-w-lg flex flex-col p-0 border border-border rounded-2xl overflow-hidden card-bg gap-0" onInteractOutside={(e) => { if (addOpen) e.preventDefault(); }} onEscapeKeyDown={(e) => e.preventDefault()}>
                 <DialogHeader className="px-6 pt-6 pb-4 border-b border-border">
                   <DialogTitle className="text-lg font-bold text-foreground">Create Lead</DialogTitle>
                   <p className="text-xs text-muted-foreground/60 mt-0.5">Fill in the details to add a new lead</p>
@@ -916,7 +916,7 @@ export default function Contacts() {
 
         {/* ── EDIT LEAD DIALOG ── */}
         <Dialog open={editOpen} onOpenChange={(v) => { if (!v) setEditOpen(false); }}>
-          <DialogContent className="max-w-lg flex flex-col p-0 border border-border rounded-2xl overflow-hidden card-bg gap-0" onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
+          <DialogContent className="max-w-lg flex flex-col p-0 border border-border rounded-2xl overflow-hidden card-bg gap-0" onInteractOutside={(e) => { if (editOpen) e.preventDefault(); }} onEscapeKeyDown={(e) => e.preventDefault()}>
             <DialogHeader className="px-6 pt-6 pb-4 border-b border-border">
               <DialogTitle className="text-lg font-bold text-foreground">Edit Lead</DialogTitle>
               <p className="text-xs text-muted-foreground/60 mt-0.5">Update lead information</p>
