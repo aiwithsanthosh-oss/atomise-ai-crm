@@ -102,7 +102,7 @@ export function PhoneInput({
       {/* Country Code + Number row */}
       <div className="flex gap-2">
         {/* Country Code Selector */}
-        <div className="shrink-0 w-[110px]">
+        <div className="shrink-0 w-[100px] min-w-[90px]">
           <Select value={countryCode} onValueChange={onCountryCodeChange}>
             <SelectTrigger className={`${triggerBase} ${codeError ? "border-red-500" : ""}`}>
               <SelectValue>
@@ -135,7 +135,7 @@ export function PhoneInput({
         </div>
 
         {/* Phone Number */}
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-[120px]">
           <input
             type="tel"
             placeholder="98765 43210"

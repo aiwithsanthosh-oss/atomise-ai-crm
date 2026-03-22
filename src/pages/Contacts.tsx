@@ -15,7 +15,7 @@ import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -482,14 +482,13 @@ export default function Contacts() {
             <p className="text-xs text-muted-foreground/70 mt-0.5 font-medium">Communication Center · {leads.length} total</p>
           </div>
           {userRole === "admin" && (
+            <>
+            <Button onClick={() => setAddOpen(true)} className="gap-2 bg-primary hover:bg-primary/90 font-bold h-10 px-4 rounded-xl">
+              <Plus className="h-4 w-4" /> Add Lead
+            </Button>
             <Dialog open={addOpen} onOpenChange={(v) => { if (!v) { setForm(emptyForm); setAddOpen(false); } }}>
-              <DialogTrigger asChild>
-                <Button className="gap-2 bg-primary hover:bg-primary/90 font-bold h-10 px-4 rounded-xl">
-                  <Plus className="h-4 w-4" /> Add Lead
-                </Button>
-              </DialogTrigger>
               {/* ── CREATE LEAD DIALOG ── */}
-              <DialogContent className="max-w-lg flex flex-col p-0 border border-border rounded-2xl overflow-hidden card-bg gap-0" onInteractOutside={(e) => { if (addOpen) e.preventDefault(); }} onEscapeKeyDown={(e) => e.preventDefault()}>
+              <DialogContent className="max-w-lg flex flex-col p-0 border border-border rounded-2xl overflow-hidden card-bg gap-0" onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
                 <DialogHeader className="px-6 pt-6 pb-4 border-b border-border">
                   <DialogTitle className="text-lg font-bold text-foreground">Create Lead</DialogTitle>
                   <p className="text-xs text-muted-foreground/60 mt-0.5">Fill in the details to add a new lead</p>
@@ -505,21 +504,19 @@ export default function Contacts() {
                         <input className={fieldInput} type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="john@company.com" />
                       </Field>
                     </div>
-                    {/* Row 2 */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <Field label="Mobile">
-                        <PhoneInput
-                          countryCode={form.countryCode}
-                          phoneNumber={form.phone}
-                          onCountryCodeChange={(c) => setForm({ ...form, countryCode: c })}
-                          onPhoneNumberChange={(n) => setForm({ ...form, phone: n })}
-                          variant="form"
-                        />
-                      </Field>
-                      <Field label="Company">
-                        <input className={fieldInput} value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} placeholder="Tata Consultancy Ltd" />
-                      </Field>
-                    </div>
+                    {/* Row 2 — Mobile full width */}
+                    <Field label="Mobile">
+                      <PhoneInput
+                        countryCode={form.countryCode}
+                        phoneNumber={form.phone}
+                        onCountryCodeChange={(c) => setForm({ ...form, countryCode: c })}
+                        onPhoneNumberChange={(n) => setForm({ ...form, phone: n })}
+                        variant="form"
+                      />
+                    </Field>
+                    <Field label="Company">
+                      <input className={fieldInput} value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} placeholder="Tata Consultancy Ltd" />
+                    </Field>
                     {/* Row 3 */}
                     <div className="grid grid-cols-2 gap-4">
                       <Field label="Status">
@@ -574,6 +571,7 @@ export default function Contacts() {
                 </div>
               </DialogContent>
             </Dialog>
+            </>
           )}
         </div>
 
@@ -916,7 +914,7 @@ export default function Contacts() {
 
         {/* ── EDIT LEAD DIALOG ── */}
         <Dialog open={editOpen} onOpenChange={(v) => { if (!v) setEditOpen(false); }}>
-          <DialogContent className="max-w-lg flex flex-col p-0 border border-border rounded-2xl overflow-hidden card-bg gap-0" onInteractOutside={(e) => { if (editOpen) e.preventDefault(); }} onEscapeKeyDown={(e) => e.preventDefault()}>
+          <DialogContent className="max-w-lg flex flex-col p-0 border border-border rounded-2xl overflow-hidden card-bg gap-0" onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
             <DialogHeader className="px-6 pt-6 pb-4 border-b border-border">
               <DialogTitle className="text-lg font-bold text-foreground">Edit Lead</DialogTitle>
               <p className="text-xs text-muted-foreground/60 mt-0.5">Update lead information</p>
@@ -931,20 +929,19 @@ export default function Contacts() {
                     <input className={fieldInput} type="email" value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} />
                   </Field>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <Field label="Mobile">
-                    <PhoneInput
-                      countryCode={editForm.countryCode || "+91"}
-                      phoneNumber={editForm.phone}
-                      onCountryCodeChange={(c) => setEditForm({ ...editForm, countryCode: c })}
-                      onPhoneNumberChange={(n) => setEditForm({ ...editForm, phone: n })}
-                      variant="form"
-                    />
-                  </Field>
-                  <Field label="Company">
-                    <input className={fieldInput} value={editForm.company} onChange={(e) => setEditForm({ ...editForm, company: e.target.value })} placeholder="Tata Consultancy Ltd" />
-                  </Field>
-                </div>
+                {/* Mobile full width */}
+                <Field label="Mobile">
+                  <PhoneInput
+                    countryCode={editForm.countryCode || "+91"}
+                    phoneNumber={editForm.phone}
+                    onCountryCodeChange={(c) => setEditForm({ ...editForm, countryCode: c })}
+                    onPhoneNumberChange={(n) => setEditForm({ ...editForm, phone: n })}
+                    variant="form"
+                  />
+                </Field>
+                <Field label="Company">
+                  <input className={fieldInput} value={editForm.company} onChange={(e) => setEditForm({ ...editForm, company: e.target.value })} placeholder="Tata Consultancy Ltd" />
+                </Field>
                 <div className="grid grid-cols-2 gap-4">
                   <Field label="Status">
                     <Select value={editForm.status} onValueChange={(v) => setEditForm({ ...editForm, status: v })}>
