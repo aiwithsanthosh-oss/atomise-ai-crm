@@ -488,12 +488,12 @@ export default function Contacts() {
             </Button>
             <Dialog open={addOpen} onOpenChange={(v) => { if (!v) { setForm(emptyForm); setAddOpen(false); } }}>
               {/* ── CREATE LEAD DIALOG ── */}
-              <DialogContent className="max-w-lg flex flex-col p-0 border border-border rounded-2xl overflow-hidden card-bg gap-0" onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
-                <DialogHeader className="px-6 pt-6 pb-4 border-b border-border">
+              <DialogContent className="max-w-lg flex flex-col p-0 border border-border rounded-2xl card-bg gap-0 max-h-[90vh]" onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
+                <DialogHeader className="px-6 pt-6 pb-4 border-b border-border shrink-0">
                   <DialogTitle className="text-lg font-bold text-foreground">Create Lead</DialogTitle>
                   <p className="text-xs text-muted-foreground/60 mt-0.5">Fill in the details to add a new lead</p>
                 </DialogHeader>
-                <ScrollArea className="max-h-[70vh]">
+                <div className="flex-1 overflow-y-auto min-h-0">
                   <div className="px-6 py-5 space-y-4">
                     {/* Row 1 */}
                     <div className="grid grid-cols-2 gap-4">
@@ -563,7 +563,7 @@ export default function Contacts() {
                       </div>
                     </Field>
                   </div>
-                </ScrollArea>
+                </div>
                 <div className="px-6 py-4 border-t border-border card-elevated">
                   <Button onClick={() => addMutation.mutate()} disabled={addMutation.isPending} className="w-full font-bold h-11 rounded-xl bg-primary hover:bg-primary/90">
                     {addMutation.isPending ? "Saving…" : "Save Lead"}
@@ -914,12 +914,12 @@ export default function Contacts() {
 
         {/* ── EDIT LEAD DIALOG ── */}
         <Dialog open={editOpen} onOpenChange={(v) => { if (!v) setEditOpen(false); }}>
-          <DialogContent className="max-w-lg flex flex-col p-0 border border-border rounded-2xl overflow-hidden card-bg gap-0" onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
-            <DialogHeader className="px-6 pt-6 pb-4 border-b border-border">
+          <DialogContent className="max-w-lg flex flex-col p-0 border border-border rounded-2xl card-bg gap-0 max-h-[90vh]" onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
+            <DialogHeader className="px-6 pt-6 pb-4 border-b border-border shrink-0">
               <DialogTitle className="text-lg font-bold text-foreground">Edit Lead</DialogTitle>
               <p className="text-xs text-muted-foreground/60 mt-0.5">Update lead information</p>
             </DialogHeader>
-            <ScrollArea className="max-h-[70vh]">
+            <div className="flex-1 overflow-y-auto min-h-0">
               <div className="px-6 py-5 space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <Field label="Full Name *">
@@ -985,8 +985,8 @@ export default function Contacts() {
                   </div>
                 </Field>
               </div>
-            </ScrollArea>
-            <div className="px-6 py-4 border-t border-border card-elevated">
+            </div>
+            <div className="px-6 py-4 shrink-0 border-t border-border card-elevated">
               <Button onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending} className="w-full font-bold h-11 rounded-xl bg-primary hover:bg-primary/90">
                 {updateMutation.isPending ? "Saving…" : "Apply Updates"}
               </Button>
