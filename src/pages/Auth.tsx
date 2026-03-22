@@ -96,9 +96,18 @@ export default function Auth() {
     setView(newView);
   };
 
-  // ── Login — no password validation (just check credentials with Supabase) ──
+  // ── Login — field validation before calling Supabase ────────────────────
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    const errors: typeof fieldErrors = {};
+    if (!email.trim())
+      errors.email = "Email address is required";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))
+      errors.email = "Enter a valid email address";
+    if (!password.trim())
+      errors.password = "Password is required";
+    if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
+    setFieldErrors({});
     setLoading(true);
     if (rememberMe) localStorage.setItem("atomise_remember_email", email);
     else localStorage.removeItem("atomise_remember_email");
@@ -172,9 +181,16 @@ export default function Auth() {
     setLoading(false);
   };
 
-  // ── Forgot password — no password validation needed (just sends reset link) ─
+  // ── Forgot password — email validation before sending reset link ──────────
   const handleResetRequest = async (e: React.FormEvent) => {
     e.preventDefault();
+    const errors: typeof fieldErrors = {};
+    if (!email.trim())
+      errors.email = "Email address is required";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))
+      errors.email = "Enter a valid email address";
+    if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
+    setFieldErrors({});
     setLoading(true);
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: window.location.origin + "/auth",
@@ -229,11 +245,18 @@ export default function Auth() {
                   </div>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input type={showPassword ? "text" : "password"} placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className={`${inputCls} pl-10 pr-10`} required />
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => { setPassword(e.target.value); setFieldErrors((p) => ({ ...p, password: undefined })); }}
+                      className={`${inputCls} pl-10 pr-10 ${fieldErrors.password ? "border-red-500" : ""}`}
+                    />
                     <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-white transition-colors">
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
+                  {fieldErrors.password && <p className="text-xs text-red-400 font-medium">{fieldErrors.password}</p>}
                 </div>
                 <div className="flex items-center space-x-2 py-1">
                   <Checkbox id="remember" checked={rememberMe} onCheckedChange={(c) => setRememberMe(!!c)} />
