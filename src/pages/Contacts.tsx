@@ -24,6 +24,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
+import { PhoneInput, joinPhone, splitPhone, COUNTRY_CODES } from "@/components/PhoneInput";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -115,7 +116,7 @@ export default function Contacts() {
   const [editingLead, setEditingLead]       = useState<Lead | null>(null);
   const [contactToDelete, setContactToDelete] = useState<Lead | null>(null);
 
-  const emptyForm = { name: "", email: "", phone: "", company: "", tags: "", status: "lead", lead_score: 50, assigned_to: "none" };
+  const emptyForm = { name: "", email: "", phone: "", countryCode: "+91", company: "", tags: "", status: "lead", lead_score: 50, assigned_to: "none" };
   const [form, setForm]       = useState(emptyForm);
   const [editForm, setEditForm] = useState(emptyForm);
   const [newNote, setNewNote] = useState("");
@@ -317,7 +318,7 @@ export default function Contacts() {
       if (existing) throw new Error("Email already exists.");
       const { error } = await supabase.from("contacts").insert({
         name: form.name.trim(), email: form.email.trim(),
-        phone: form.phone || null, company: form.company || null,
+        phone: form.phone ? joinPhone(form.countryCode, form.phone) : null, company: form.company || null,
         tags: form.tags.split(",").map((t) => t.trim()).filter(Boolean),
         status: form.status, lead_score: form.lead_score,
         assigned_to: form.assigned_to === "none" ? null : form.assigned_to,
@@ -340,7 +341,7 @@ export default function Contacts() {
       if (!editingLead) return;
       const { error } = await supabase.from("contacts").update({
         name: editForm.name.trim(), email: editForm.email.trim(),
-        phone: editForm.phone || null, company: editForm.company || null,
+        phone: editForm.phone ? joinPhone(editForm.countryCode, editForm.phone) : null, company: editForm.company || null,
         tags: editForm.tags.split(",").map((t) => t.trim()).filter(Boolean),
         status: editForm.status, lead_score: editForm.lead_score,
         assigned_to: editForm.assigned_to === "none" ? null : editForm.assigned_to,
@@ -391,7 +392,7 @@ export default function Contacts() {
     setEditingLead(lead);
     setEditForm({
       name: lead.name, email: lead.email,
-      phone: lead.phone || "", company: lead.company || "",
+      phone: lead.phone ? splitPhone(lead.phone).number : "", countryCode: lead.phone ? splitPhone(lead.phone).code : "+91", company: lead.company || "",
       tags: (lead.tags || []).join(", "),
       status: (lead.status || "lead").toLowerCase(),
       lead_score: lead.lead_score || 50,
@@ -487,7 +488,13 @@ export default function Contacts() {
                     {/* Row 2 */}
                     <div className="grid grid-cols-2 gap-4">
                       <Field label="Mobile">
-                        <input className={fieldInput} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+91 98765 43210" />
+                        <PhoneInput
+                          countryCode={form.countryCode}
+                          phoneNumber={form.phone}
+                          onCountryCodeChange={(c) => setForm({ ...form, countryCode: c })}
+                          onPhoneNumberChange={(n) => setForm({ ...form, phone: n })}
+                          variant="form"
+                        />
                       </Field>
                       <Field label="Company">
                         <input className={fieldInput} value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} placeholder="Tata Consultancy Ltd" />
@@ -906,7 +913,13 @@ export default function Contacts() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <Field label="Mobile">
-                    <input className={fieldInput} value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} placeholder="+91 98765 43210" />
+                    <PhoneInput
+                      countryCode={editForm.countryCode || "+91"}
+                      phoneNumber={editForm.phone}
+                      onCountryCodeChange={(c) => setEditForm({ ...editForm, countryCode: c })}
+                      onPhoneNumberChange={(n) => setEditForm({ ...editForm, phone: n })}
+                      variant="form"
+                    />
                   </Field>
                   <Field label="Company">
                     <input className={fieldInput} value={editForm.company} onChange={(e) => setEditForm({ ...editForm, company: e.target.value })} placeholder="Tata Consultancy Ltd" />

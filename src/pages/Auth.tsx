@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { Eye, EyeOff, ArrowLeft, Mail, UserPlus, User, Phone, Lock, CheckCircle2, XCircle } from "lucide-react";
+import { PhoneInput, joinPhone, splitPhone } from "@/components/PhoneInput";
 import { Checkbox } from "@/components/ui/checkbox";
 import { motion, AnimatePresence } from "framer-motion";
 import { PASSWORD_RULES, validatePassword, passwordStrength } from "@/lib/passwordValidation";
@@ -66,7 +67,8 @@ export default function Auth() {
   const [email, setEmail]             = useState("");
   const [password, setPassword]       = useState("");
   const [fullName, setFullName]       = useState("");
-  const [mobileNumber, setMobileNumber] = useState("");
+  const [countryCode, setCountryCode]   = useState("+91");
+  const [phoneNumber, setPhoneNumber]   = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe]   = useState(true);
   const [passwordError, setPasswordError] = useState<string | null>(null);
@@ -89,7 +91,8 @@ export default function Auth() {
     if (newView !== "login") setEmail("");
     setPassword("");
     setFullName("");
-    setMobileNumber("");
+    setCountryCode("+91");
+    setPhoneNumber("");
     setShowPassword(false);
     setPasswordError(null);
     setFieldErrors({});
@@ -140,9 +143,9 @@ export default function Auth() {
     const errors: typeof fieldErrors = {};
     if (!fullName.trim())
       errors.fullName = "Full Name is required";
-    if (!mobileNumber.trim())
-      errors.mobile = "Mobile Number is required";
-    else if (!/^[+]?[\d\s\-()]{7,15}$/.test(mobileNumber.trim()))
+    if (!phoneNumber.trim())
+      errors.mobile = "Mobile number is required";
+    else if (phoneNumber.trim().length < 6)
       errors.mobile = "Enter a valid mobile number";
     if (!email.trim())
       errors.email = "Email address is required";
@@ -166,7 +169,7 @@ export default function Auth() {
 
     const { data, error } = await supabase.auth.signUp({
       email, password,
-      options: { data: { full_name: fullName, mobile_number: mobileNumber } },
+      options: { data: { full_name: fullName, mobile_number: joinPhone(countryCode, phoneNumber) } },
     });
     if (error) {
       toast({ variant: "destructive", title: "Signup Error", description: error.message });
@@ -297,17 +300,14 @@ export default function Auth() {
                 </div>
                 <div className="space-y-1">
                   <Label>Mobile Number</Label>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      type="tel"
-                      placeholder="+91 98765 43210"
-                      value={mobileNumber}
-                      onChange={(e) => { setMobileNumber(e.target.value); setFieldErrors((p) => ({ ...p, mobile: undefined })); }}
-                      className={`${inputCls} pl-10 ${fieldErrors.mobile ? "border-red-500" : ""}`}
-                    />
-                  </div>
-                  {fieldErrors.mobile && <p className="text-xs text-red-400 font-medium">{fieldErrors.mobile}</p>}
+                  <PhoneInput
+                    countryCode={countryCode}
+                    phoneNumber={phoneNumber}
+                    onCountryCodeChange={(c) => setCountryCode(c)}
+                    onPhoneNumberChange={(n) => { setPhoneNumber(n); setFieldErrors((p) => ({ ...p, mobile: undefined })); }}
+                    numberError={fieldErrors.mobile}
+                    variant="auth"
+                  />
                 </div>
                 <div className="space-y-1">
                   <Label>Email Address</Label>
