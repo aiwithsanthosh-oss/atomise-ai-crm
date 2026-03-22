@@ -376,10 +376,10 @@ const Onboarding = () => {
       </div>
 
       {/* ── Main content — split panel ── */}
-      <div className="flex-none lg:flex-1 lg:min-h-0 grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-3">
+      <div className="flex-none lg:flex-1 lg:min-h-0 grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-3 lg:overflow-hidden">
 
         {/* ── LEFT: Client list ── */}
-        <div className="flex flex-col h-[320px] lg:min-h-0 card-bg border border-border rounded-[16px] overflow-hidden">
+        <div className="flex flex-col h-[320px] lg:h-auto lg:flex-1 lg:min-h-0 card-bg border border-border rounded-[16px] overflow-hidden">
 
           {/* Search */}
           <div className="p-3 border-b border-border">
@@ -471,7 +471,7 @@ const Onboarding = () => {
         </div>
 
         {/* ── RIGHT: Checklist detail ── */}
-        <div className="flex flex-col h-[500px] lg:min-h-0 card-bg border border-border rounded-[16px] overflow-hidden">
+        <div className="flex flex-col h-[500px] lg:h-auto lg:flex-1 lg:min-h-0 card-bg border border-border rounded-[16px] overflow-hidden">
           {!selectedTracker ? (
             <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
               <ClipboardList className="h-12 w-12 text-muted-foreground/15 mb-3" />
