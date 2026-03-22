@@ -60,7 +60,7 @@ const App = () => {
   useEffect(() => {
     // Detect password recovery link FIRST before any session redirect
     const hash = window.location.hash;
-    if (hash && hash.includes("type=recovery")) {
+    if (hash && (hash.includes("type=recovery") || hash.includes("error=access_denied") || hash.includes("error_code=otp_expired"))) {
       setIsRecovery(true);
     }
 

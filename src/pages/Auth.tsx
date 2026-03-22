@@ -88,13 +88,25 @@ export default function Auth() {
   }, []);
 
   // ── Detect Supabase password recovery link ────────────────────────────────
+  const [recoveryError, setRecoveryError] = useState<string | null>(null);
+
   useEffect(() => {
-    // Supabase appends #access_token=...&type=recovery to the redirect URL
     const hash = window.location.hash;
-    if (hash && hash.includes("type=recovery")) {
-      setView("update_password");
+    if (hash) {
+      const params = new URLSearchParams(hash.replace("#", ""));
+      const type = params.get("type");
+      const error = params.get("error");
+      const errorCode = params.get("error_code");
+      const errorDesc = params.get("error_description");
+
+      if (type === "recovery") {
+        setView("update_password");
+      } else if (error === "access_denied" || errorCode === "otp_expired") {
+        setRecoveryError(errorDesc?.replace(/\+/g, " ") || "This reset link has expired. Please request a new one.");
+        setView("update_password");
+      }
     }
-    // Also listen for onAuthStateChange PASSWORD_RECOVERY event
+    // Listen for onAuthStateChange PASSWORD_RECOVERY event
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY") {
         setView("update_password");
@@ -438,33 +450,73 @@ export default function Auth() {
             <motion.div key="update_password" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="space-y-6">
               <div className="space-y-2 text-center flex flex-col items-center">
                 <img src="/logo.png" alt="Atomise AI" className="w-16 h-16 object-contain mb-2" />
-                <h2 className="text-2xl font-bold tracking-tight text-white font-display">Set New Password</h2>
-                <p className="text-sm text-muted-foreground">Enter your new password below.</p>
+                <h2 className="text-2xl font-bold tracking-tight text-white font-display">
+                  {recoveryError ? "Link Expired" : "Set New Password"}
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  {recoveryError ? "Your password reset link has expired." : "Enter your new password below."}
+                </p>
               </div>
-              <form onSubmit={handleUpdatePassword} className="space-y-4">
-                <div className="space-y-1">
-                  <Label>New Password</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Min 6 chars, 1 uppercase, 1 number, 1 special"
-                      value={password}
-                      onChange={(e) => { setPassword(e.target.value); setPasswordError(null); setFieldErrors((p) => ({ ...p, password: undefined })); }}
-                      className={`${inputCls} pl-10 pr-10 ${passwordError ? "border-red-500" : ""}`}
-                    />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-white transition-colors">
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
+
+              {/* ── Expired link — show resend option ── */}
+              {recoveryError ? (
+                <div className="space-y-4">
+                  <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20">
+                    <p className="text-sm text-red-400 text-center font-medium">
+                      ⚠️ This reset link has expired or is invalid.
+                    </p>
+                    <p className="text-xs text-muted-foreground/70 text-center mt-1">
+                      Reset links expire after 1 hour for security.
+                    </p>
                   </div>
-                  <PasswordChecklist password={password} />
-                  <StrengthBar password={password} />
-                  {passwordError && <p className="text-xs text-red-400 font-medium mt-1">{passwordError}</p>}
+                  <Button
+                    onClick={() => { setRecoveryError(null); handleViewChange("forgot_password"); }}
+                    className="w-full h-11 font-bold shadow-lg rounded-xl"
+                  >
+                    Request New Reset Link
+                  </Button>
+                  <button
+                    type="button"
+                    onClick={() => handleViewChange("login")}
+                    className="flex items-center justify-center w-full gap-2 text-sm text-muted-foreground hover:text-primary pt-2"
+                  >
+                    <ArrowLeft className="h-4 w-4" /> Back to Login
+                  </button>
                 </div>
-                <Button type="submit" className="w-full h-11 font-bold shadow-lg rounded-xl" disabled={loading}>
-                  {loading ? "Updating..." : "Update Password"}
-                </Button>
-              </form>
+              ) : (
+                /* ── Valid link — show new password form ── */
+                <form onSubmit={handleUpdatePassword} className="space-y-4">
+                  <div className="space-y-1">
+                    <Label>New Password</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Min 6 chars, 1 uppercase, 1 number, 1 special"
+                        value={password}
+                        onChange={(e) => { setPassword(e.target.value); setPasswordError(null); setFieldErrors((p) => ({ ...p, password: undefined })); }}
+                        className={`${inputCls} pl-10 pr-10 ${passwordError ? "border-red-500" : ""}`}
+                      />
+                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-white transition-colors">
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                    <PasswordChecklist password={password} />
+                    <StrengthBar password={password} />
+                    {passwordError && <p className="text-xs text-red-400 font-medium mt-1">{passwordError}</p>}
+                  </div>
+                  <Button type="submit" className="w-full h-11 font-bold shadow-lg rounded-xl" disabled={loading}>
+                    {loading ? "Updating..." : "Update Password"}
+                  </Button>
+                  <button
+                    type="button"
+                    onClick={() => handleViewChange("login")}
+                    className="flex items-center justify-center w-full gap-2 text-sm text-muted-foreground hover:text-primary pt-2"
+                  >
+                    <ArrowLeft className="h-4 w-4" /> Back to Login
+                  </button>
+                </form>
+              )}
             </motion.div>
           )}
 
