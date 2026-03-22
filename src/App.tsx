@@ -54,24 +54,34 @@ const App = () => {
   const [loading, setLoading]       = useState(true);
   const [userRole, setUserRole]     = useState<string | null>(null);
   const [roleLoading, setRoleLoading] = useState(true);
+  const [isRecovery, setIsRecovery] = useState(false);
 
   // ── Auth session listener ──────────────────────────────────────────────────
   useEffect(() => {
+    // Detect password recovery link FIRST before any session redirect
+    const hash = window.location.hash;
+    if (hash && hash.includes("type=recovery")) {
+      setIsRecovery(true);
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setLoading(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (_event === "PASSWORD_RECOVERY") {
+        setIsRecovery(true);
+        setLoading(false);
+        return;
+      }
       setSession(session);
       setLoading(false);
       if (!session) {
-        // Logged out — clear role
         setUserRole(null);
         setRoleLoading(false);
+        setIsRecovery(false);
       } else {
-        // Logged in — immediately set roleLoading true
-        // so routes don't render before role is fetched
         setRoleLoading(true);
       }
     });
@@ -122,7 +132,12 @@ const App = () => {
           <Sonner />
           <BrowserRouter>
             <Routes>
-              {!session ? (
+              {isRecovery ? (
+                // ── PASSWORD RECOVERY: always show Auth page ───────────────
+                <>
+                  <Route path="*" element={<Auth />} />
+                </>
+              ) : !session ? (
                 // ── PUBLIC: unauthenticated users ──────────────────────────
                 <>
                   <Route path="/auth" element={<Auth />} />
