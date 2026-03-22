@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { createPortal } from "react-dom";
 import {
   Search, Plus, Mail, Pencil, Trash2, Clock,
   MessageSquare, UserCheck, Flame, Phone,
@@ -122,6 +123,25 @@ export default function Contacts() {
   const [newNote, setNewNote] = useState("");
 
   const queryClient = useQueryClient();
+
+  // ── Block tab/window switch from closing modals ────────────────────────────
+  const anyModalOpen = useRef(false);
+  useEffect(() => {
+    anyModalOpen.current = addOpen || editOpen;
+  }, [addOpen, editOpen]);
+  useEffect(() => {
+    const noop = (e: Event) => { if (anyModalOpen.current) e.stopImmediatePropagation(); };
+    document.addEventListener("visibilitychange", noop, true);
+    document.addEventListener("focusout", noop, true);
+    window.addEventListener("blur", noop, true);
+    window.addEventListener("pagehide", noop, true);
+    return () => {
+      document.removeEventListener("visibilitychange", noop, true);
+      document.removeEventListener("focusout", noop, true);
+      window.removeEventListener("blur", noop, true);
+      window.removeEventListener("pagehide", noop, true);
+    };
+  }, []);
 
   // ── AI Summary state ───────────────────────────────────────────────────────
   const [aiLead, setAiLead]           = useState<Lead | null>(null);
@@ -462,14 +482,14 @@ export default function Contacts() {
             <p className="text-xs text-muted-foreground/70 mt-0.5 font-medium">Communication Center · {leads.length} total</p>
           </div>
           {userRole === "admin" && (
-            <Dialog open={addOpen} onOpenChange={(v) => { if (!v) setForm(emptyForm); setAddOpen(v); }}>
+            <Dialog open={addOpen} onOpenChange={(v) => { if (!v) { setForm(emptyForm); setAddOpen(false); } }}>
               <DialogTrigger asChild>
                 <Button className="gap-2 bg-primary hover:bg-primary/90 font-bold h-10 px-4 rounded-xl">
                   <Plus className="h-4 w-4" /> Add Lead
                 </Button>
               </DialogTrigger>
               {/* ── CREATE LEAD DIALOG ── */}
-              <DialogContent className="max-w-lg flex flex-col p-0 border border-border rounded-2xl overflow-hidden card-bg gap-0">
+              <DialogContent className="max-w-lg flex flex-col p-0 border border-border rounded-2xl overflow-hidden card-bg gap-0" onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
                 <DialogHeader className="px-6 pt-6 pb-4 border-b border-border">
                   <DialogTitle className="text-lg font-bold text-foreground">Create Lead</DialogTitle>
                   <p className="text-xs text-muted-foreground/60 mt-0.5">Fill in the details to add a new lead</p>
@@ -895,8 +915,8 @@ export default function Contacts() {
         </div>
 
         {/* ── EDIT LEAD DIALOG ── */}
-        <Dialog open={editOpen} onOpenChange={setEditOpen}>
-          <DialogContent className="max-w-lg flex flex-col p-0 border border-border rounded-2xl overflow-hidden card-bg gap-0">
+        <Dialog open={editOpen} onOpenChange={(v) => { if (!v) setEditOpen(false); }}>
+          <DialogContent className="max-w-lg flex flex-col p-0 border border-border rounded-2xl overflow-hidden card-bg gap-0" onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
             <DialogHeader className="px-6 pt-6 pb-4 border-b border-border">
               <DialogTitle className="text-lg font-bold text-foreground">Edit Lead</DialogTitle>
               <p className="text-xs text-muted-foreground/60 mt-0.5">Update lead information</p>

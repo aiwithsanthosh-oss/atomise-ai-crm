@@ -102,13 +102,13 @@ export function PhoneInput({
       {/* Country Code + Number row */}
       <div className="flex gap-2">
         {/* Country Code Selector */}
-        <div className="shrink-0 w-[130px]">
+        <div className="shrink-0 w-[110px]">
           <Select value={countryCode} onValueChange={onCountryCodeChange}>
             <SelectTrigger className={`${triggerBase} ${codeError ? "border-red-500" : ""}`}>
               <SelectValue>
-                <span className="flex items-center gap-1.5 text-sm">
-                  {COUNTRY_CODES.find((c) => c.code === countryCode)?.flag}
-                  <span className="font-bold">{countryCode}</span>
+                <span className="flex items-center gap-1 text-sm">
+                  <span>{COUNTRY_CODES.find((c) => c.code === countryCode)?.flag}</span>
+                  <span className="font-bold text-xs">{countryCode}</span>
                 </span>
               </SelectValue>
             </SelectTrigger>
