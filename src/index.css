@@ -21,9 +21,9 @@
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
 
-    /* Atomise AI Brand Purple */
-    --primary: 262 83% 58%;
-    --primary-foreground: 210 20% 98%;
+    /* ── Atomise AI Teal — deeper shade for light mode readability ── */
+    --primary: 187 70% 35%;
+    --primary-foreground: 0 0% 100%;
 
     --secondary: 240 4.8% 95.9%;
     --secondary-foreground: 240 5.9% 10%;
@@ -36,25 +36,25 @@
 
     --border: 240 5.9% 90%;
     --input: 240 5.9% 90%;
-    --ring: 262 83% 58%;
+    /* ── CHANGED: ring matches new primary ── */
+    --ring: 187 70% 35%;
     --radius: 0.75rem;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 262 83% 58%;
+    /* ── CHANGED: sidebar primary matches new primary ── */
+    --sidebar-primary: 187 70% 35%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 240 4.8% 95.9%;
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 262 83% 58%;
+    --sidebar-ring: 187 70% 35%;
 
-    /* ── Custom surface variables used by all pages ── */
-    /* These replace hardcoded #050507 and #0d0d0f in dark mode */
-    --page-bg: 240 20% 98%;        /* light: near-white page background */
-    --card-bg: 0 0% 100%;          /* light: white card/panel background */
-    --card-elevated: 240 20% 96%;  /* light: slightly grey elevated surface */
-    --text-primary: 240 10% 3.9%;  /* light: near-black text */
-    --border-subtle: 240 5.9% 90%; /* light: subtle borders */
+    --page-bg: 240 20% 98%;
+    --card-bg: 0 0% 100%;
+    --card-elevated: 240 20% 96%;
+    --text-primary: 240 10% 3.9%;
+    --border-subtle: 240 5.9% 90%;
     --surface: 240 4.8% 95.9%;
     --surface-elevated: 0 0% 100%;
     --kanban-card: 0 0% 100%;
@@ -62,48 +62,52 @@
 
   /* ── ATOMISE AI DARK THEME ── */
   .dark {
-    --background: 240 10% 3.9%;
+    /* ── CHANGED: darker navy background to match atomiseai.com ── */
+    --background: 222 47% 5%;
     --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
+    --card: 222 47% 5%;
     --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
+    --popover: 222 47% 5%;
     --popover-foreground: 0 0% 98%;
 
-    /* Signature Atomise Purple */
-    --primary: 262 83% 58%;
-    --primary-foreground: 210 20% 98%;
+    /* ── CHANGED: Atomise AI Cyan/Teal as primary ── */
+    --primary: 187 100% 50%;
+    --primary-foreground: 222 47% 5%;
 
-    --secondary: 240 3.7% 15.9%;
+    --secondary: 222 30% 10%;
     --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
+    --muted: 222 30% 10%;
+    --muted-foreground: 220 10% 55%;
+    --accent: 222 30% 10%;
     --accent-foreground: 0 0% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 262 83% 58%;
+    /* ── CHANGED: border color slightly navy-tinted ── */
+    --border: 222 25% 12%;
+    --input: 222 25% 12%;
+    /* ── CHANGED: ring matches new primary ── */
+    --ring: 187 100% 50%;
 
-    --sidebar-background: 240 10% 3.9%;
-    --sidebar-foreground: 240 5% 64.9%;
-    --sidebar-primary: 262 83% 58%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-background: 222 47% 5%;
+    --sidebar-foreground: 220 10% 55%;
+    /* ── CHANGED: sidebar primary matches new primary ── */
+    --sidebar-primary: 187 100% 50%;
+    --sidebar-primary-foreground: 222 47% 5%;
+    --sidebar-accent: 222 30% 10%;
     --sidebar-accent-foreground: 210 20% 98%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 262 83% 58%;
+    --sidebar-border: 222 25% 12%;
+    --sidebar-ring: 187 100% 50%;
 
-    /* ── Custom surface variables — dark values ── */
-    --page-bg: 240 11% 2%;         /* dark: #050507 equivalent */
-    --card-bg: 240 8% 5%;          /* dark: #0d0d0f equivalent */
-    --card-elevated: 240 6% 7%;    /* dark: slightly lighter card */
-    --text-primary: 0 0% 98%;      /* dark: near-white text */
-    --border-subtle: 240 3.7% 10%; /* dark: subtle borders */
-    --surface: 240 3.7% 15.9%;
-    --surface-elevated: 240 8% 5%;
-    --kanban-card: 240 8% 5%;
+    /* ── CHANGED: dark surfaces with navy tint ── */
+    --page-bg: 222 50% 3%;
+    --card-bg: 222 40% 5%;
+    --card-elevated: 222 35% 7%;
+    --text-primary: 0 0% 98%;
+    --border-subtle: 222 25% 10%;
+    --surface: 222 30% 10%;
+    --surface-elevated: 222 40% 5%;
+    --kanban-card: 222 40% 5%;
   }
 }
 
@@ -113,22 +117,22 @@
   }
 
   .dark .glass-card {
-    background: rgba(10, 10, 10, 0.7);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(5, 8, 20, 0.7);
+    border: 1px solid rgba(0, 229, 255, 0.08);
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
   }
 
-  /* Page wrapper — use instead of bg-[#050507] */
+  /* Page wrapper */
   .page-bg {
     background-color: hsl(var(--page-bg));
   }
 
-  /* Card/panel — use instead of bg-[#0d0d0f] */
+  /* Card/panel */
   .card-bg {
     background-color: hsl(var(--card-bg));
   }
 
-  /* Elevated card — slightly lighter than card-bg */
+  /* Elevated card */
   .card-elevated {
     background-color: hsl(var(--card-elevated));
   }
