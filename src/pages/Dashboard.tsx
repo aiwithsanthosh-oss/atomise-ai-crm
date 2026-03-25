@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Users, DollarSign, TrendingUp, CheckCircle, UserPlus, Handshake, CheckSquare, ArrowRight, RefreshCw } from "lucide-react";
+import { Users, DollarSign, TrendingUp, CheckCircle, UserPlus, Handshake, CheckSquare, ArrowRight, RefreshCw, Calendar, X, Ban } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
@@ -141,10 +141,12 @@ const Dashboard = () => {
   const { data: recentActivity = [] } = useQuery({
     queryKey: ["recent-activity"],
     queryFn: async () => {
-      const [contactsRes, dealsRes, tasksRes] = await Promise.all([
+      const [contactsRes, dealsRes, tasksRes, apptsRes] = await Promise.all([
         supabase.from("contacts").select("id, name, created_at, status").order("created_at", { ascending: false }).limit(5),
         supabase.from("deals").select("id, name, created_at, stage, value").order("created_at", { ascending: false }).limit(5),
         supabase.from("tasks").select("id, title, created_at, status, priority").order("created_at", { ascending: false }).limit(5),
+        // ─── FIX: appointments now included ───────────────────────────────
+        supabase.from("appointments").select("id, title, created_at, status, appointment_date, start_time").order("created_at", { ascending: false }).limit(5),
       ]);
       const contacts = (contactsRes.data || []).map((c) => ({
         id: c.id,
@@ -170,7 +172,26 @@ const Dashboard = () => {
         meta: `Priority: ${t.priority ?? "medium"}`,
         created_at: t.created_at,
       }));
-      return [...contacts, ...deals, ...tasks]
+      // ─── FIX: map appointments into the activity feed ─────────────────
+      const appts = (apptsRes.data || []).map((a) => ({
+        id: a.id,
+        type: a.status === "completed"
+          ? "appt_done" as const
+          : a.status === "cancelled"
+          ? "appt_cancelled" as const
+          : "appt" as const,
+        label: a.status === "completed"
+          ? "Appointment Completed"
+          : a.status === "cancelled"
+          ? "Appointment Cancelled"
+          : "Appointment Booked",
+        name: a.title,
+        meta: a.appointment_date && a.start_time
+          ? `${a.appointment_date} · ${a.start_time.slice(0, 5)}`
+          : a.appointment_date ?? "",
+        created_at: a.created_at,
+      }));
+      return [...contacts, ...deals, ...tasks, ...appts]
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
         .slice(0, 8);
     },
@@ -251,12 +272,15 @@ const Dashboard = () => {
           </div>
           <div className="flex-1 overflow-y-auto pr-1 min-h-0 space-y-2">
             {recentActivity.map((item) => {
-              // Icon + colour per event type
+              // ─── FIX: iconMap now includes all 3 appointment types ────
               const iconMap = {
-                contact:   { icon: UserPlus,   bg: "bg-blue-500/15",    border: "border-blue-500/25",    color: "text-blue-400"    },
-                deal:      { icon: Handshake,  bg: "bg-emerald-500/15", border: "border-emerald-500/25", color: "text-emerald-400" },
-                task:      { icon: CheckSquare,bg: "bg-amber-500/15",   border: "border-amber-500/25",   color: "text-amber-400"   },
-                task_done: { icon: CheckCircle,bg: "bg-primary/15",     border: "border-primary/25",     color: "text-primary"     },
+                contact:        { icon: UserPlus,   bg: "bg-blue-500/15",    border: "border-blue-500/25",    color: "text-blue-400"    },
+                deal:           { icon: Handshake,  bg: "bg-emerald-500/15", border: "border-emerald-500/25", color: "text-emerald-400" },
+                task:           { icon: CheckSquare,bg: "bg-amber-500/15",   border: "border-amber-500/25",   color: "text-amber-400"   },
+                task_done:      { icon: CheckCircle,bg: "bg-primary/15",     border: "border-primary/25",     color: "text-primary"     },
+                appt:           { icon: Calendar,   bg: "bg-violet-500/15",  border: "border-violet-500/25",  color: "text-violet-400"  },
+                appt_done:      { icon: CheckCircle,bg: "bg-emerald-500/15", border: "border-emerald-500/25", color: "text-emerald-400" },
+                appt_cancelled: { icon: Ban,        bg: "bg-red-500/15",     border: "border-red-500/25",     color: "text-red-400"     },
               };
               const { icon: Icon, bg, border, color } = iconMap[item.type] ?? iconMap.contact;
               return (
