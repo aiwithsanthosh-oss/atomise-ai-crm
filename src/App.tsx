@@ -22,7 +22,6 @@ import Appointments from "./pages/Appointments";
 
 const queryClient = new QueryClient();
 
-// ─── Check recovery URL before anything renders ───────────────────────────────
 function isRecoveryUrl(): boolean {
   const hash = window.location.hash || "";
   const params = new URLSearchParams(hash.replace("#", ""));
@@ -35,10 +34,8 @@ function isRecoveryUrl(): boolean {
   return false;
 }
 
-// Evaluated ONCE at module load time — before React, before BrowserRouter
 const INITIAL_IS_RECOVERY = isRecoveryUrl();
 
-// ─── Role Guard ───────────────────────────────────────────────────────────────
 function RoleGuard({
   allowedRoles,
   userRole,
@@ -55,7 +52,6 @@ function RoleGuard({
   return <Outlet />;
 }
 
-// ─── Save intended URL then redirect to login ─────────────────────────────────
 function SaveAndRedirect() {
   const location = useLocation();
   useEffect(() => {
@@ -67,7 +63,6 @@ function SaveAndRedirect() {
   return <Navigate to="/auth" replace />;
 }
 
-// ─── Inner router component ───────────────────────────────────────────────────
 function AppRoutes({ session, loading, userRole, roleLoading, isRecovery }: {
   session: any;
   loading: boolean;
@@ -75,9 +70,6 @@ function AppRoutes({ session, loading, userRole, roleLoading, isRecovery }: {
   roleLoading: boolean;
   isRecovery: boolean;
 }) {
-  // ── FIXED: wait for BOTH loading AND roleLoading before rendering routes ──
-  // Previously only checked `loading`, so routes rendered while roleLoading
-  // was still true — causing RoleGuard to return null and hit the 404 page
   const isFullyReady = !loading && !roleLoading;
 
   if (!isFullyReady && !isRecovery) {
@@ -102,22 +94,26 @@ function AppRoutes({ session, loading, userRole, roleLoading, isRecovery }: {
         </>
       ) : (
         <Route element={<AppLayout userRole={userRole} children={<Outlet />} />}>
-          <Route path="/"             element={<Dashboard />} />
-          <Route path="/contacts"     element={<Contacts />} />
-          <Route path="/tasks"        element={<Tasks />} />
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/contacts" element={<Contacts />} />
+          <Route path="/tasks" element={<Tasks />} />
           <Route path="/appointments" element={<Appointments />} />
-          <Route path="/onboarding"   element={<Onboarding />} />
-          <Route element={
-            <RoleGuard
-              allowedRoles={["admin"]}
-              userRole={userRole}
-              roleLoading={roleLoading}
-            />
-          }>
-            <Route path="/pipeline"  element={<Pipeline />} />
-            <Route path="/settings"  element={<Settings />} />
+          <Route path="/onboarding" element={<Onboarding />} />
+          <Route path="/pipeline" element={<Pipeline />} />
+
+          <Route
+            element={
+              <RoleGuard
+                allowedRoles={["admin"]}
+                userRole={userRole}
+                roleLoading={roleLoading}
+              />
+            }
+          >
+            <Route path="/settings" element={<Settings />} />
             <Route path="/campaigns" element={<Campaigns />} />
           </Route>
+
           <Route path="*" element={<NotFound />} />
         </Route>
       )}
@@ -126,15 +122,13 @@ function AppRoutes({ session, loading, userRole, roleLoading, isRecovery }: {
 }
 
 const App = () => {
-  const [session, setSession]         = useState<any>(null);
-  const [loading, setLoading]         = useState(true);
-  const [userRole, setUserRole]       = useState<string | null>(null);
+  const [session, setSession] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [roleLoading, setRoleLoading] = useState(true);
-  const [isRecovery, setIsRecovery]   = useState(INITIAL_IS_RECOVERY);
+  const [isRecovery, setIsRecovery] = useState(INITIAL_IS_RECOVERY);
 
-  // ── Auth session listener ──────────────────────────────────────────────────
   useEffect(() => {
-    // During recovery, skip getSession — let onAuthStateChange handle it
     if (INITIAL_IS_RECOVERY) {
       setLoading(false);
     } else {
@@ -145,7 +139,6 @@ const App = () => {
     }
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      // PASSWORD_RECOVERY event — always show reset screen
       if (_event === "PASSWORD_RECOVERY") {
         setIsRecovery(true);
         setSession(session);
@@ -154,8 +147,6 @@ const App = () => {
         return;
       }
 
-      // SIGNED_IN fires when recovery link access_token is consumed by Supabase
-      // If we started as a recovery URL, treat this SIGNED_IN as recovery too
       if (_event === "SIGNED_IN" && INITIAL_IS_RECOVERY) {
         setIsRecovery(true);
         setSession(session);
@@ -164,7 +155,6 @@ const App = () => {
         return;
       }
 
-      // Normal auth flow
       setSession(session);
       setLoading(false);
 
@@ -180,13 +170,11 @@ const App = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  // ── Fetch role once session is established ─────────────────────────────────
   useEffect(() => {
     if (!session?.user) {
       setRoleLoading(false);
       return;
     }
-    // Skip role fetch during recovery flow
     if (isRecovery) {
       setRoleLoading(false);
       return;

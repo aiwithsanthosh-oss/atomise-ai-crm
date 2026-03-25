@@ -15,40 +15,36 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
-// ─── Nav items with role permissions ─────────────────────────────────────────
-// admin  → all pages
-// sales  → dashboard, contacts, tasks only
+// admin  -> all pages allowed by role
+// sales  -> dashboard, contacts, pipeline, tasks, onboarding, appointments
 
 const navItems = [
-  { title: "Dashboard", url: "/",         icon: LayoutDashboard, roles: ["admin", "sales"] },
-  { title: "Contacts",  url: "/contacts", icon: Users,           roles: ["admin", "sales"] },
-  { title: "Pipeline",  url: "/pipeline", icon: Kanban,          roles: ["admin"]           },
-  { title: "Tasks",     url: "/tasks",    icon: CheckSquare,     roles: ["admin", "sales"] },
-  { title: "Campaigns",  url: "/campaigns", icon: Megaphone,       roles: ["admin"]           },
-  { title: "Onboarding",   url: "/onboarding",   icon: ClipboardList, roles: ["admin", "sales"] },
-  { title: "Appointments",  url: "/appointments", icon: CalendarDays,  roles: ["admin", "sales"] },
+  { title: "Dashboard", url: "/",            icon: LayoutDashboard, roles: ["admin", "sales"] },
+  { title: "Contacts",  url: "/contacts",    icon: Users,           roles: ["admin", "sales"] },
+  { title: "Pipeline",  url: "/pipeline",    icon: Kanban,          roles: ["admin", "sales"] },
+  { title: "Tasks",     url: "/tasks",       icon: CheckSquare,     roles: ["admin", "sales"] },
+  { title: "Campaigns", url: "/campaigns",   icon: Megaphone,       roles: ["admin"] },
+  { title: "Onboarding", url: "/onboarding", icon: ClipboardList,   roles: ["admin", "sales"] },
+  { title: "Appointments", url: "/appointments", icon: CalendarDays, roles: ["admin", "sales"] },
 ];
 
 type Props = { userRole: string | null };
 
 export function AppSidebar({ userRole }: Props) {
   const { state } = useSidebar();
-  const location  = useLocation();
-  const navigate  = useNavigate();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/auth");
   };
 
-  // While role is loading, show empty nav (prevents flash of wrong items)
   const role = userRole ?? "";
 
   return (
     <Sidebar collapsible="offcanvas" className="border-r border-border glass-card z-50">
       <div className="flex h-full flex-col">
-
-        {/* ── BRANDING HEADER ── */}
         <div className="flex items-center gap-3 px-4 py-4 border-b border-border transition-all duration-300 shrink-0">
           <div className="h-11 w-11 rounded-xl overflow-hidden flex items-center justify-center shrink-0 bg-primary/10 border border-primary/20" style={{ boxShadow: "0 0 12px hsl(262 83% 58% / 0.2)" }}>
             <img
@@ -70,7 +66,6 @@ export function AppSidebar({ userRole }: Props) {
           </div>
         </div>
 
-        {/* ── MAIN NAV ── */}
         <SidebarContent className="flex-1 pt-4">
           <SidebarGroup>
             <SidebarGroupContent>
@@ -102,11 +97,8 @@ export function AppSidebar({ userRole }: Props) {
           </SidebarGroup>
         </SidebarContent>
 
-        {/* ── FOOTER ── */}
         <SidebarFooter className="shrink-0 border-t border-border p-2">
           <SidebarMenu>
-
-            {/* Settings — Admin only */}
             {role === "admin" && (
               <SidebarMenuItem>
                 <SidebarMenuButton
@@ -121,7 +113,6 @@ export function AppSidebar({ userRole }: Props) {
               </SidebarMenuItem>
             )}
 
-            {/* Logout — all roles */}
             <SidebarMenuItem>
               <SidebarMenuButton
                 onClick={handleLogout}
@@ -131,10 +122,8 @@ export function AppSidebar({ userRole }: Props) {
                 <span>Logout</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
-
           </SidebarMenu>
         </SidebarFooter>
-
       </div>
     </Sidebar>
   );

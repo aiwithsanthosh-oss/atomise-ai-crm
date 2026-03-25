@@ -6,7 +6,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTheme } from "@/components/theme-provider";
 import { Button } from "@/components/ui/button";
 
-// userRole is passed down from App.tsx — single source of truth
 export function AppLayout({
   children,
   userRole,
@@ -31,19 +30,15 @@ export function AppLayout({
 
   return (
     <SidebarProvider>
-      {/* h-screen + overflow-hidden here — ONE scroll context for the whole app */}
       <div className="h-screen flex w-full bg-background transition-colors duration-300 overflow-hidden">
         <AppSidebar userRole={userRole} />
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-
-          {/* Fixed header — never scrolls */}
           <header className="h-14 shrink-0 flex items-center justify-between border-b border-border px-4 bg-card/50 backdrop-blur-md z-50">
             <div className="flex items-center">
               <SidebarTrigger />
             </div>
 
             <div className="flex items-center gap-2">
-              {/* Theme toggle */}
               <Button
                 variant="ghost"
                 size="icon"
@@ -61,7 +56,6 @@ export function AppLayout({
 
               <div className="h-4 w-[1px] bg-border mx-1" />
 
-              {/* User info */}
               <div className="flex items-center gap-3">
                 {userEmail && (
                   <span className="text-xs text-muted-foreground hidden md:inline-block">
@@ -75,13 +69,9 @@ export function AppLayout({
             </div>
           </header>
 
-          {/* Page content — fills remaining height, no overflow here.
-              Each page (Dashboard, Contacts, Pipeline, Tasks) manages
-              its own internal scroll so there is only ONE scrollbar. */}
-          <main className="flex-1 overflow-hidden overflow-y-auto bg-background">
+          <main className="flex-1 min-w-0 overflow-hidden">
             {children}
           </main>
-
         </div>
       </div>
     </SidebarProvider>

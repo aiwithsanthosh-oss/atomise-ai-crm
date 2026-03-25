@@ -20,19 +20,25 @@ import { toast } from "@/components/ui/sonner";
 const stages = ["Lead", "Qualified", "Proposal", "Negotiation", "Closed"];
 
 const STAGE_META: Record<string, { color: string; badge: string; dot: string }> = {
-  Lead:        { color: "#60a5fa", badge: "border-blue-500/30 bg-blue-500/10 text-blue-400",      dot: "bg-blue-400"    },
-  Qualified:   { color: "#a78bfa", badge: "border-purple-500/30 bg-purple-500/10 text-purple-400", dot: "bg-purple-400"  },
-  Proposal:    { color: "#f59e0b", badge: "border-amber-500/30 bg-amber-500/10 text-amber-400",    dot: "bg-amber-400"   },
-  Negotiation: { color: "#facc15", badge: "border-yellow-500/30 bg-yellow-500/10 text-yellow-400", dot: "bg-yellow-400"  },
+  Lead:        { color: "#60a5fa", badge: "border-blue-500/30 bg-blue-500/10 text-blue-400", dot: "bg-blue-400" },
+  Qualified:   { color: "#a78bfa", badge: "border-purple-500/30 bg-purple-500/10 text-purple-400", dot: "bg-purple-400" },
+  Proposal:    { color: "#f59e0b", badge: "border-amber-500/30 bg-amber-500/10 text-amber-400", dot: "bg-amber-400" },
+  Negotiation: { color: "#facc15", badge: "border-yellow-500/30 bg-yellow-500/10 text-yellow-400", dot: "bg-yellow-400" },
   Closed:      { color: "#10b981", badge: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400", dot: "bg-emerald-400" },
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const stripCurrency = (raw: unknown) => String(raw ?? "").replace(/[^0-9.-]/g, "");
-const formatForDb   = (raw: string)  => { const c = stripCurrency(raw); return c === "" ? "0" : c; };
-const formatForCard = (raw: unknown) => { const c = stripCurrency(raw); return c === "" ? "0" : c; };
-const columnTotal   = (deals: any[]) => {
+const formatForDb = (raw: string) => {
+  const c = stripCurrency(raw);
+  return c === "" ? "0" : c;
+};
+const formatForCard = (raw: unknown) => {
+  const c = stripCurrency(raw);
+  return c === "" ? "0" : c;
+};
+const columnTotal = (deals: any[]) => {
   const t = deals.reduce((acc, d) => acc + (parseFloat(stripCurrency(d.value)) || 0), 0);
   return t === 0 ? "$0" : `$${t.toLocaleString()}`;
 };
@@ -43,7 +49,7 @@ type Contact = { id: string; name: string; email: string; company: string | null
 
 function ContactPicker({
   contacts,
-  value,       // currently selected contact_id
+  value,
   onChange,
 }: {
   contacts: Contact[];
@@ -66,13 +72,12 @@ function ContactPicker({
 
   return (
     <div className="relative">
-      {/* Selected contact chip OR search trigger */}
       {selected && !open ? (
         <div className="flex items-center justify-between h-10 px-3 rounded-lg bg-muted/50 border border-border text-sm text-foreground">
-          <span className="flex items-center gap-2">
-            <User className="h-3.5 w-3.5 text-purple-400" />
-            <span className="font-medium">{selected.name}</span>
-            <span className="text-muted-foreground text-xs">{selected.email}</span>
+          <span className="flex items-center gap-2 min-w-0">
+            <User className="h-3.5 w-3.5 text-purple-400 shrink-0" />
+            <span className="font-medium truncate">{selected.name}</span>
+            <span className="text-muted-foreground text-xs truncate">{selected.email}</span>
           </span>
           <button
             type="button"
@@ -86,7 +91,7 @@ function ContactPicker({
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
           <Input
-            placeholder="Search contact by name, email or company…"
+            placeholder="Search contact by name, email or company..."
             value={search}
             onChange={(e) => { setSearch(e.target.value); setOpen(true); }}
             onFocus={() => setOpen(true)}
@@ -95,10 +100,8 @@ function ContactPicker({
         </div>
       )}
 
-      {/* Dropdown list */}
       {open && !selected && (
         <>
-          {/* Click-outside overlay */}
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
           <div className="absolute z-20 mt-1 w-full rounded-[12px] card-bg border border-border shadow-2xl shadow-black/50 overflow-hidden">
             {filtered.length === 0 ? (
@@ -129,7 +132,6 @@ function ContactPicker({
                 ))}
               </ul>
             )}
-            {/* Option to clear / unlink */}
             {value && (
               <button
                 type="button"
@@ -149,33 +151,49 @@ function ContactPicker({
 // ─── Pipeline Page ────────────────────────────────────────────────────────────
 
 const Pipeline = () => {
-  const [draggedDeal, setDraggedDeal]     = useState<string | null>(null);
+  const [draggedDeal, setDraggedDeal] = useState<string | null>(null);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
-  const [dealToDelete, setDealToDelete]   = useState<string | null>(null);
+  const [dealToDelete, setDealToDelete] = useState<string | null>(null);
 
-  // ── Touch drag state for mobile ───────────────────────────────────────────
-  const [touchDealId, setTouchDealId]     = useState<string | null>(null);
-  const [touchStage, setTouchStage]       = useState<string | null>(null);
-  const [touchActive, setTouchActive]     = useState(false);
-  const touchDealIdRef  = useRef<string | null>(null);
-  const touchActiveRef  = useRef(false);
-  const touchStageRef   = useRef<string | null>(null);
+  const [touchDealId, setTouchDealId] = useState<string | null>(null);
+  const [touchStage, setTouchStage] = useState<string | null>(null);
+  const [touchActive, setTouchActive] = useState(false);
+  const touchDealIdRef = useRef<string | null>(null);
+  const touchActiveRef = useRef(false);
+  const touchStageRef = useRef<string | null>(null);
 
-  // Edit dialog state
-  const [editDealId, setEditDealId]   = useState<string | null>(null);
-  const [editName, setEditName]       = useState("");
-  const [editValue, setEditValue]     = useState("");
+  const [editDealId, setEditDealId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editValue, setEditValue] = useState("");
   const [editContactId, setEditContactId] = useState<string | null>(null);
 
-  // Add dialog state
-  const [addStage, setAddStage]       = useState<string | null>(null);
-  const [addName, setAddName]         = useState("");
-  const [addValue, setAddValue]       = useState("");
+  const [addStage, setAddStage] = useState<string | null>(null);
+  const [addName, setAddName] = useState("");
+  const [addValue, setAddValue] = useState("");
   const [addContactId, setAddContactId] = useState<string | null>(null);
 
   const queryClient = useQueryClient();
 
-  // ── Queries ────────────────────────────────────────────────────────────────
+  const { data: userRole = "sales" } = useQuery({
+    queryKey: ["pipeline-user-role"],
+    queryFn: async () => {
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (authError) throw authError;
+      const user = authData.user;
+      if (!user) return "sales";
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+
+      if (error) throw error;
+      return data?.role || "sales";
+    },
+  });
+
+  const isAdmin = userRole === "admin";
 
   const { data: deals = [] } = useQuery({
     queryKey: ["deals"],
@@ -186,7 +204,6 @@ const Pipeline = () => {
     },
   });
 
-  // Load all contacts for the picker
   const { data: contacts = [] } = useQuery({
     queryKey: ["contacts-for-picker"],
     queryFn: async () => {
@@ -198,8 +215,6 @@ const Pipeline = () => {
       return data as Contact[];
     },
   });
-
-  // ── Mutations ──────────────────────────────────────────────────────────────
 
   const updateStage = useMutation({
     mutationFn: async ({ id, stage }: { id: string; stage: string }) => {
@@ -229,7 +244,6 @@ const Pipeline = () => {
 
   const updateDeal = useMutation({
     mutationFn: async ({ id, name, value, contact_id }: { id: string; name: string; value: string; contact_id: string | null }) => {
-      // If a contact is linked, also sync the company name
       const linkedContact = contacts.find((c) => c.id === contact_id);
       const { error } = await supabase.from("deals").update({
         name: name.trim(),
@@ -280,46 +294,42 @@ const Pipeline = () => {
     onError: (e: Error) => toast.error(`Failed to add: ${e.message}`),
   });
 
-  // ── Helpers ────────────────────────────────────────────────────────────────
-
   const handleDrop = (stage: string) => {
-    if (!draggedDeal) return;
+    if (!isAdmin || !draggedDeal) return;
     updateStage.mutate({ id: draggedDeal, stage });
     setDraggedDeal(null);
     setDragOverStage(null);
   };
 
-  // ── Touch handlers for mobile drag ────────────────────────────────────────
-  // Uses native event listeners (not React synthetic) to allow preventDefault
-  // which stops page scroll during drag on mobile
   const handleTouchStart = (dealId: string) => {
-    touchDealIdRef.current  = dealId;
-    touchActiveRef.current  = true;
-    touchStageRef.current   = null;
+    if (!isAdmin) return;
+    touchDealIdRef.current = dealId;
+    touchActiveRef.current = true;
+    touchStageRef.current = null;
     setTouchDealId(dealId);
     setTouchActive(true);
   };
 
   const handleTouchEnd = () => {
+    if (!isAdmin) return;
     const dealId = touchDealIdRef.current;
-    const stage  = touchStageRef.current;
+    const stage = touchStageRef.current;
     if (dealId && stage) {
       updateStage.mutate({ id: dealId, stage });
       toast.success("Deal moved to " + stage);
     }
-    touchDealIdRef.current  = null;
-    touchActiveRef.current  = false;
-    touchStageRef.current   = null;
+    touchDealIdRef.current = null;
+    touchActiveRef.current = false;
+    touchStageRef.current = null;
     setTouchDealId(null);
     setTouchStage(null);
     setTouchActive(false);
   };
 
-  // Native touch move — attached with { passive: false } so preventDefault works
   useEffect(() => {
     const onTouchMove = (e: TouchEvent) => {
-      if (!touchActiveRef.current) return;
-      e.preventDefault(); // blocks scroll — only works with passive: false
+      if (!isAdmin || !touchActiveRef.current) return;
+      e.preventDefault();
       const touch = e.touches[0];
       const el = document.elementFromPoint(touch.clientX, touch.clientY);
       const col = el?.closest("[data-stage]");
@@ -329,160 +339,167 @@ const Pipeline = () => {
     };
     document.addEventListener("touchmove", onTouchMove, { passive: false });
     return () => document.removeEventListener("touchmove", onTouchMove);
-  }, []);
+  }, [isAdmin]);
 
   const openEdit = (deal: any) => {
+    if (!isAdmin) return;
     setEditDealId(deal.id);
     setEditName(deal.name ?? "");
     setEditValue(formatForCard(deal.value));
     setEditContactId(deal.contact_id ?? null);
   };
 
-  const selectedDeal   = deals.find((d) => d.id === dealToDelete);
+  const selectedDeal = deals.find((d) => d.id === dealToDelete);
   const editDealObject = deals.find((d) => d.id === editDealId);
 
-  // ── Render ─────────────────────────────────────────────────────────────────
-
   return (
-    <div className="h-full w-full flex flex-col overflow-hidden page-bg px-6 pt-5 pb-5">
-
-      {/* Header */}
+    <div className="h-full w-full flex flex-col overflow-hidden page-bg px-4 md:px-6 pt-5 pb-5">
       <div className="mb-5 shrink-0">
         <h1 className="text-2xl md:text-3xl font-display font-bold tracking-tighter text-foreground">Pipeline</h1>
-        <p className="text-muted-foreground text-xs mt-0.5">Drag deals between stages to update their status</p>
+        <p className="text-muted-foreground text-xs mt-0.5">
+          {isAdmin
+            ? "Drag deals between stages to update their status"
+            : "Read-only view of the pipeline"}
+        </p>
       </div>
 
-      {/* Kanban board */}
-      <div className="flex-1 flex gap-3 md:gap-4 overflow-x-auto pb-2 min-h-0">
-        {stages.map((stage) => {
-          const meta       = STAGE_META[stage];
-          const stageDeals = deals.filter((d) => d.stage === stage);
-          const isOver     = dragOverStage === stage || touchStage === stage;
+      <div className="flex-1 min-h-0 overflow-hidden">
+        <div className="grid h-full min-w-0 grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3 md:gap-4">
+          {stages.map((stage) => {
+            const meta = STAGE_META[stage];
+            const stageDeals = deals.filter((d) => d.stage === stage);
+            const isOver = isAdmin && (dragOverStage === stage || touchStage === stage);
 
-          return (
-            <div
-              key={stage}
-              className="flex-shrink-0 w-[17rem] flex flex-col"
-              data-stage={stage}
-              onDragOver={(e) => { e.preventDefault(); setDragOverStage(stage); }}
-              onDragLeave={() => setDragOverStage(null)}
-              onDrop={() => handleDrop(stage)}
-            >
-              {/* Column header */}
+            return (
               <div
-                className="rounded-[16px] px-3 py-3 mb-3 border card-bg transition-all duration-200"
-                style={{
-                  borderColor: isOver ? meta.color + "60" : "rgba(255,255,255,0.06)",
-                  boxShadow:   isOver ? `0 0 18px ${meta.color}25` : "none",
-                }}
+                key={stage}
+                className="min-w-0 flex flex-col"
+                data-stage={stage}
+                onDragOver={isAdmin ? (e) => { e.preventDefault(); setDragOverStage(stage); } : undefined}
+                onDragLeave={isAdmin ? () => setDragOverStage(null) : undefined}
+                onDrop={isAdmin ? () => handleDrop(stage) : undefined}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className={`h-2 w-2 rounded-full ${meta.dot}`} />
-                    <h3 className="text-sm font-bold tracking-wide" style={{ color: meta.color }}>{stage}</h3>
-                    <Badge variant="outline" className={`text-[10px] font-bold px-1.5 py-0 ${meta.badge}`}>
-                      {stageDeals.length}
-                    </Badge>
+                <div
+                  className="rounded-[16px] px-3 py-3 mb-3 border card-bg transition-all duration-200"
+                  style={{
+                    borderColor: isOver ? meta.color + "60" : "rgba(255,255,255,0.06)",
+                    boxShadow: isOver ? `0 0 18px ${meta.color}25` : "none",
+                  }}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className={`h-2 w-2 rounded-full shrink-0 ${meta.dot}`} />
+                      <h3 className="text-sm font-bold tracking-wide truncate" style={{ color: meta.color }}>{stage}</h3>
+                      <Badge variant="outline" className={`text-[10px] font-bold px-1.5 py-0 shrink-0 ${meta.badge}`}>
+                        {stageDeals.length}
+                      </Badge>
+                    </div>
+                    {isAdmin && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                        onClick={() => { setAddStage(stage); setAddName(""); setAddValue(""); setAddContactId(null); }}
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                   </div>
-                  <Button
-                    variant="ghost" size="icon"
-                    className="h-7 w-7 text-muted-foreground hover:text-foreground transition-colors"
-                    onClick={() => { setAddStage(stage); setAddName(""); setAddValue(""); setAddContactId(null); }}
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                  </Button>
+                  <p className="text-[11px] font-bold mt-1.5 tabular-nums truncate" style={{ color: meta.color + "99" }}>
+                    {columnTotal(stageDeals)}
+                  </p>
                 </div>
-                <p className="text-[11px] font-bold mt-1.5 tabular-nums" style={{ color: meta.color + "99" }}>
-                  {columnTotal(stageDeals)}
-                </p>
-              </div>
 
-              {/* Cards */}
-              <div
-                className="flex-1 rounded-[16px] p-2 space-y-2 overflow-y-auto transition-all duration-200"
-                style={{
-                  background: isOver ? `${meta.color}08` : "rgba(255,255,255,0.015)",
-                  border: `1px solid ${isOver ? meta.color + "30" : "rgba(255,255,255,0.04)"}`,
-                  minHeight: "120px",
-                }}
-              >
-                {stageDeals.map((deal) => {
-                  // Resolve linked contact name for display
-                  const linkedContact = contacts.find((c) => c.id === deal.contact_id);
+                <div
+                  className="flex-1 min-h-[120px] rounded-[16px] p-2 space-y-2 overflow-y-auto overflow-x-hidden transition-all duration-200"
+                  style={{
+                    background: isOver ? `${meta.color}08` : "rgba(255,255,255,0.015)",
+                    border: `1px solid ${isOver ? meta.color + "30" : "rgba(255,255,255,0.04)"}`,
+                  }}
+                >
+                  {stageDeals.map((deal) => {
+                    const linkedContact = contacts.find((c) => c.id === deal.contact_id);
 
-                  return (
-                    <div
-                      key={deal.id}
-                      draggable
-                      onDragStart={() => setDraggedDeal(deal.id)}
-                      onDragEnd={() => { setDraggedDeal(null); setDragOverStage(null); }}
-                      onTouchStart={() => handleTouchStart(deal.id)}
-                      onTouchEnd={handleTouchEnd}
-                      className="group rounded-[12px] p-3.5 border border-border card-bg cursor-grab active:cursor-grabbing transition-all duration-200 hover:border-purple-500/40 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-purple-500/10"
-                      style={{ opacity: (draggedDeal === deal.id || touchDealId === deal.id) ? 0.45 : 1 }}
-                    >
-                      {/* Deal name + action buttons */}
-                      <div className="flex items-start justify-between mb-2.5">
-                        <span className="text-sm font-semibold text-foreground leading-snug pr-1">{deal.name}</span>
-                        <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-                          <Button
-                            variant="ghost" size="icon"
-                            className="h-6 w-6 text-muted-foreground hover:text-foreground transition-colors"
-                            onClick={(e) => { e.stopPropagation(); openEdit(deal); }}
-                          >
-                            <Pencil className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            variant="ghost" size="icon"
-                            className="h-6 w-6 text-muted-foreground hover:text-red-400 transition-colors"
-                            onClick={(e) => { e.stopPropagation(); setDealToDelete(deal.id); }}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                          <GripVertical className="h-4 w-4 text-muted-foreground/40 ml-0.5" />
+                    return (
+                      <div
+                        key={deal.id}
+                        draggable={isAdmin}
+                        onDragStart={isAdmin ? () => setDraggedDeal(deal.id) : undefined}
+                        onDragEnd={isAdmin ? () => { setDraggedDeal(null); setDragOverStage(null); } : undefined}
+                        onTouchStart={isAdmin ? () => handleTouchStart(deal.id) : undefined}
+                        onTouchEnd={isAdmin ? handleTouchEnd : undefined}
+                        className={`group rounded-[12px] p-3.5 border border-border card-bg transition-all duration-200 min-w-0 ${
+                          isAdmin
+                            ? "cursor-grab active:cursor-grabbing hover:border-purple-500/40 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-purple-500/10"
+                            : "cursor-default"
+                        }`}
+                        style={{ opacity: (draggedDeal === deal.id || touchDealId === deal.id) ? 0.45 : 1 }}
+                      >
+                        <div className="flex items-start justify-between gap-2 mb-2.5">
+                          <span className="text-sm font-semibold text-foreground leading-snug min-w-0 break-words">
+                            {deal.name}
+                          </span>
+
+                          {isAdmin && (
+                            <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 text-muted-foreground hover:text-foreground transition-colors"
+                                onClick={(e) => { e.stopPropagation(); openEdit(deal); }}
+                              >
+                                <Pencil className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 text-muted-foreground hover:text-red-400 transition-colors"
+                                onClick={(e) => { e.stopPropagation(); setDealToDelete(deal.id); }}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                              <GripVertical className="h-4 w-4 text-muted-foreground/40 ml-0.5" />
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-1.5 text-[11px] mb-2 min-w-0">
+                          <User className="h-3 w-3 shrink-0" style={{ color: linkedContact ? meta.color : undefined }} />
+                          {linkedContact ? (
+                            <span className="font-semibold truncate" style={{ color: meta.color }}>
+                              {linkedContact.name}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground/50 truncate">{deal.company}</span>
+                          )}
+                        </div>
+
+                        <div
+                          className="inline-flex max-w-full items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full"
+                          style={{ color: meta.color, background: meta.color + "15", border: `1px solid ${meta.color}30` }}
+                        >
+                          <DollarSign className="h-3 w-3 shrink-0" />
+                          <span className="truncate">{formatForCard(deal.value)}</span>
                         </div>
                       </div>
+                    );
+                  })}
 
-                      {/* Linked contact — shows name if linked, company if not */}
-                      <div className="flex items-center gap-1.5 text-[11px] mb-2">
-                        <User className="h-3 w-3 shrink-0" style={{ color: linkedContact ? meta.color : undefined }} />
-                        {linkedContact ? (
-                          <span className="font-semibold" style={{ color: meta.color }}>
-                            {linkedContact.name}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground/50">{deal.company}</span>
-                        )}
+                  {stageDeals.length === 0 && (
+                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                      <div className="h-8 w-8 rounded-full mb-2 flex items-center justify-center" style={{ background: meta.color + "15" }}>
+                        <Plus className="h-4 w-4" style={{ color: meta.color + "80" }} />
                       </div>
-
-                      {/* Value chip */}
-                      <div
-                        className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full"
-                        style={{ color: meta.color, background: meta.color + "15", border: `1px solid ${meta.color}30` }}
-                      >
-                        <DollarSign className="h-3 w-3" />
-                        {formatForCard(deal.value)}
-                      </div>
+                      <p className="text-[11px] text-muted-foreground/40">No deals yet</p>
                     </div>
-                  );
-                })}
-
-                {/* Empty state */}
-                {stageDeals.length === 0 && (
-                  <div className="flex flex-col items-center justify-center py-8 text-center">
-                    <div className="h-8 w-8 rounded-full mb-2 flex items-center justify-center" style={{ background: meta.color + "15" }}>
-                      <Plus className="h-4 w-4" style={{ color: meta.color + "80" }} />
-                    </div>
-                    <p className="text-[11px] text-muted-foreground/40">No deals yet</p>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
 
-      {/* ── ADD DEAL DIALOG ── */}
       <Dialog open={!!addStage} onOpenChange={(o) => { if (!o) setAddStage(null); }}>
         <DialogContent className="card-bg border border-border max-w-md">
           <DialogHeader>
@@ -496,7 +513,6 @@ const Pipeline = () => {
           </DialogHeader>
 
           <div className="space-y-4 py-2">
-            {/* Deal name */}
             <div className="space-y-1.5">
               <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Deal Name *</Label>
               <Input
@@ -507,7 +523,6 @@ const Pipeline = () => {
               />
             </div>
 
-            {/* Value */}
             <div className="space-y-1.5">
               <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Value ($)</Label>
               <Input
@@ -519,7 +534,6 @@ const Pipeline = () => {
               />
             </div>
 
-            {/* Contact picker */}
             <div className="space-y-1.5">
               <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
                 Linked Contact <span className="text-muted-foreground/40 normal-case font-normal">(optional)</span>
@@ -538,13 +552,12 @@ const Pipeline = () => {
               }}
               disabled={addDeal.isPending}
             >
-              {addDeal.isPending ? "Adding…" : "Add Deal"}
+              {addDeal.isPending ? "Adding..." : "Add Deal"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* ── EDIT DEAL DIALOG ── */}
       <Dialog open={!!editDealId} onOpenChange={(o) => { if (!o) setEditDealId(null); }}>
         <DialogContent className="card-bg border border-border max-w-md">
           <DialogHeader>
@@ -553,7 +566,6 @@ const Pipeline = () => {
           </DialogHeader>
 
           <div className="space-y-4 py-2">
-            {/* Deal name */}
             <div className="space-y-1.5">
               <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Deal Name *</Label>
               <Input
@@ -563,7 +575,6 @@ const Pipeline = () => {
               />
             </div>
 
-            {/* Value */}
             <div className="space-y-1.5">
               <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Value ($)</Label>
               <Input
@@ -575,7 +586,6 @@ const Pipeline = () => {
               />
             </div>
 
-            {/* Contact picker */}
             <div className="space-y-1.5">
               <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
                 Linked Contact <span className="text-muted-foreground/40 normal-case font-normal">(optional)</span>
@@ -594,13 +604,12 @@ const Pipeline = () => {
               }}
               disabled={updateDeal.isPending || !editDealObject}
             >
-              {updateDeal.isPending ? "Saving…" : "Save Changes"}
+              {updateDeal.isPending ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* ── DELETE CONFIRMATION ── */}
       <AlertDialog open={!!dealToDelete} onOpenChange={(o) => !o && setDealToDelete(null)}>
         <AlertDialogContent className="card-bg border border-border">
           <AlertDialogHeader>
@@ -617,7 +626,7 @@ const Pipeline = () => {
               className="bg-red-600 hover:bg-red-700 text-foreground"
               onClick={() => dealToDelete && deleteDeal.mutate(dealToDelete)}
             >
-              {deleteDeal.isPending ? "Deleting…" : "Delete"}
+              {deleteDeal.isPending ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
