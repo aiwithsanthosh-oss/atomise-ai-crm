@@ -257,7 +257,7 @@ export default function Contacts() {
           "Authorization": "Bearer " + groqKey,
         },
         body: JSON.stringify({
-          model: "llama-3.3-70b-versatile",
+          model: "openai/gpt-oss-120b",
           max_tokens: 1000,
           temperature: 0.4,
           messages: [
